@@ -18,7 +18,7 @@ import * as parser from 'fast-xml-parser';
 import { IAuditorium, IConference, IInterestRoom, IPerson, ITalk } from "../models/schedule";
 import * as moment from "moment";
 import { RoomKind } from "../models/room_kinds";
-import config from "../config";
+import config, { AvailableBackends } from "../config";
 import { ConferenceParser } from './AParser';
 
 export interface IPentabarfEvent {
@@ -217,5 +217,9 @@ export class PentabarfParser extends ConferenceParser {
                 }
             }
         }
+    }
+
+    public getSystemName(): AvailableBackends {
+        return "pentabarf";
     }
 }

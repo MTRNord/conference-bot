@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import { Pool } from "pg";
-import config from "../config";
+import config, { AvailableBackends } from "../config";
 import { IDbPerson } from "./DbPerson";
 import { LogService, UserID } from "matrix-bot-sdk";
 import { objectFastClone } from "../utils";
@@ -50,7 +50,7 @@ export class PentaDb implements DBBackend {
         this.connect();
     }
 
-    public getSystemName(): string {
+    public getSystemName(): AvailableBackends {
         return "pentabarf";
     }
 

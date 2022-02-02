@@ -21,6 +21,8 @@ import { IRCBridge, IRCBridgeOpts } from "./IRCBridge";
 import { Scheduler } from "./Scheduler";
 import { CheckInMap } from "./CheckInMap";
 
+export type AvailableBackends = "pentabarf";
+
 interface IConfig {
     homeserverUrl: string;
     accessToken: string;
@@ -52,6 +54,7 @@ interface IConfig {
     conference: {
         id: string;
         name: string;
+        backendType: AvailableBackends;
         pentabarfDefinition: string;
         timezone: string;
         lookaheadMinutes: number;

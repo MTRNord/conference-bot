@@ -1,7 +1,9 @@
+import config, { AvailableBackends } from "../config";
 import { IAuditorium, IConference, IInterestRoom, IPerson, ITalk } from "../models/schedule";
 import { PentabarfParser } from "./PentabarfParser";
 
 export abstract class ConferenceParser {
+    public abstract getSystemName(): AvailableBackends;
     public readonly conference: IConference;
     public readonly auditoriums: IAuditorium[];
     public readonly talks: ITalk[];
@@ -10,5 +12,12 @@ export abstract class ConferenceParser {
 }
 
 export const getConferenceParser = (input: string): ConferenceParser => {
-    return new PentabarfParser(input);
+    switch (config.conference.backendType) {
+        case "pentabarf": {
+            return new PentabarfParser(input);
+        }
+        default: {
+            throw new Error("Unsupported backend type set in the config");
+        }
+    }
 };

@@ -1,9 +1,11 @@
+
+import config, { AvailableBackends } from "../config";
 import { IDbPerson } from "./DbPerson";
 import { IDbTalk } from "./DbTalk";
 import { PentaDb } from "./PentaDb";
 
 export abstract class DBBackend {
-    public abstract getSystemName(): string;
+    public abstract getSystemName(): AvailableBackends;
     public abstract findPeopleWithId(personId: string): Promise<IDbPerson[]>;
     public abstract findAllPeopleForAuditorium(auditoriumId: string): Promise<IDbPerson[]>;
     public abstract findAllPeopleForTalk(talkId: string): Promise<IDbPerson[]>;
@@ -20,5 +22,12 @@ export abstract class DBBackend {
 }
 
 export const getBackendDB = (): DBBackend => {
-    return new PentaDb();
+    switch (config.conference.backendType) {
+        case "pentabarf": {
+            return new PentaDb();
+        }
+        default: {
+            throw new Error("Unsupported backend type set in the config");
+        }
+    }
 };
