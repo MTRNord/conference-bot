@@ -55,7 +55,7 @@ interface IConfig {
         id: string;
         name: string;
         backendType: AvailableBackends;
-        pentabarfDefinition: string;
+        pentabarfDefinition?: string;
         timezone: string;
         lookaheadMinutes: number;
         supportRooms: {
@@ -94,8 +94,10 @@ interface IConfig {
             password: string;
             database: string;
             sslmode: string;
-            tblPeople: string;
-            tblSchedule: string;
+            pentabarfTables?: {
+                tblPeople: string;
+                tblSchedule: string;
+            };
             schedulePreBufferSeconds: number;
             schedulePostBufferSeconds: number;
         };

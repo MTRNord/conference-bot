@@ -33,8 +33,29 @@ export class BuildCommand implements ICommand {
 
         await client.sendReadReceipt(roomId, event['event_id']);
 
-        const xml = await fetch(config.conference.pentabarfDefinition).then(r => r.text());
-        const parsed = getConferenceParser(xml);
+        let inputData;
+        switch (config.conference.backendType) {
+            case "pentabarf": {
+                if (config.conference.pentabarfDefinition) {
+                    inputData = await fetch(config.conference.pentabarfDefinition).then(r => r.text());
+                    break;
+                } else {
+                    const message = "Your bot is not set up correctly. Please check your config!";
+                    const reply = RichReply.createFor(roomId, event, message, message);
+                    reply["msgtype"] = "m.notice";
+                    await client.sendMessage(roomId, reply);
+                    return;
+                }
+            }
+            default: {
+                const message = "Your bot is not set up correctly. Please check your config!";
+                const reply = RichReply.createFor(roomId, event, message, message);
+                reply["msgtype"] = "m.notice";
+                await client.sendMessage(roomId, reply);
+                return;
+            }
+        }
+        const parsed = getConferenceParser(inputData);
 
         if (!conference.isCreated) {
             await conference.createDb(parsed.conference);
