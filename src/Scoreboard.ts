@@ -107,7 +107,7 @@ export class Scoreboard {
     public async load() {
         let json: any;
         try {
-            const data = await fs.readFile(this.path);
+            const data = await fs.readFile(this.path, "utf8");
             json = JSON.parse(data);
         } catch (error) {
             if (error.code === 'ENOENT') {
