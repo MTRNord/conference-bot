@@ -90,7 +90,7 @@ config.RUNTIME.scheduler = scheduler;
 const ircBridge = new IRCBridge(config.ircBridge, client);
 config.RUNTIME.ircBridge = ircBridge;
 
-const checkins = new CheckInMap(client, conference);
+const checkins = new CheckInMap(client);
 config.RUNTIME.checkins = checkins;
 
 let localpart;
@@ -219,6 +219,7 @@ function setupWebserver() {
         root: tmplPath,
         cache: process.env.NODE_ENV === 'production',
     });
+    // @ts-ignore Bug in express types.
     app.use(express.urlencoded({ extended: true }));
     app.use('/assets', express.static(config.webserver.additionalAssetsPath));
     app.use('/bundles', express.static(path.join(tmplPath, 'bundles')));
