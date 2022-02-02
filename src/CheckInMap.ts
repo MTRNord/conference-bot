@@ -16,8 +16,7 @@ limitations under the License.
 
 import { LogService, MatrixClient } from "matrix-bot-sdk";
 import AwaitLock from "await-lock";
-import { Conference } from "./Conference";
-import {promises as fs} from "node:fs";
+import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import config from "./config";
 
@@ -28,17 +27,17 @@ interface ICheckin {
 const CHECKIN_TIME = 4 * 60 * 60 * 1000; // 4 hours
 
 export class CheckInMap {
-    private checkedIn: { [userId: string]: ICheckin } = {};
+    private checkedIn: { [userId: string]: ICheckin; } = {};
     private lock = new AwaitLock();
 
-    constructor(private client: MatrixClient, private conference: Conference) {
-        client.on('room.event', async (roomId: string, event: any) => {
+    constructor(private client: MatrixClient) {
+        this.client.on('room.event', async (roomId: string, event: any) => {
             if (!this.checkedIn[event['sender']]) return;
 
             if (event['type'] === 'm.room.message' || event['type'] === 'm.reaction') {
                 await this.lock.acquireAsync();
                 try {
-                    this.checkedIn[event['sender']] = {expires: Date.now() + CHECKIN_TIME};
+                    this.checkedIn[event['sender']] = { expires: Date.now() + CHECKIN_TIME };
                     await this.persist();
                 } finally {
                     this.lock.release();
@@ -69,7 +68,7 @@ export class CheckInMap {
         try {
             for (const userId of userIds) {
                 if (this.checkedIn[userId]) continue;
-                this.checkedIn[userId] = {expires: 0};
+                this.checkedIn[userId] = { expires: 0 };
             }
             await this.persist();
         } finally {
@@ -81,7 +80,7 @@ export class CheckInMap {
         await this.lock.acquireAsync();
         try {
             if (!this.checkedIn[userId]) return;
-            this.checkedIn[userId] = {expires: Date.now() + CHECKIN_TIME};
+            this.checkedIn[userId] = { expires: Date.now() + CHECKIN_TIME };
             await this.persist();
         } finally {
             this.lock.release();

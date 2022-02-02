@@ -144,6 +144,6 @@ function intercept(ev) {
     ev.stopPropagation();
     widgetApi.navigateTo(ev.target.href);
 }
-(<any>window).intercept = intercept;
+(<any>window).intercept = intercept; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 doFetch();

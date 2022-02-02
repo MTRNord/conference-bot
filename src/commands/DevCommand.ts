@@ -22,7 +22,7 @@ import { IDbPerson, Role } from "../db/DbPerson";
 export class DevCommand implements ICommand {
     public readonly prefixes = ["dev"];
 
-    public async run(conference: Conference, client: MatrixClient, roomId: string, event: any, args: string[]) {
+    public async run(conference: Conference, client: MatrixClient, roomId: string) {
         const people: IDbPerson[] = [];
         for (const aud of conference.storedAuditoriums) {
             const inviteTargets = await conference.getInviteTargetsForAuditorium(aud, true);

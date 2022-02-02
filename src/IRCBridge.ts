@@ -18,7 +18,6 @@ import { MatrixClient, MatrixEvent } from "matrix-bot-sdk";
 import * as irc from "irc-upd";
 import { Auditorium } from "./models/Auditorium";
 import { InterestRoom } from "./models/InterestRoom";
-import config from "./config";
 import { makeLocalpart } from "./utils/aliases";
 
 export interface IRCBridgeOpts {

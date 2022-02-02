@@ -25,9 +25,9 @@ const PLUMB_WAIT_MS = 1000;
 export class IrcPlumbCommand implements ICommand {
     public readonly prefixes = ["plumb-irc"];
 
-    constructor(private readonly ircBridge: IRCBridge) {}
+    constructor(private readonly ircBridge: IRCBridge) { }
 
-    private async plumbAll(conference: Conference, client: MatrixClient, roomId: string) {
+    private async plumbAll(conference: Conference) {
         for (const auditorium of conference.storedAuditoriums) {
             const channelName = await this.ircBridge.deriveChannelName(auditorium);
             try {
@@ -57,7 +57,7 @@ export class IrcPlumbCommand implements ICommand {
         const [channel, requestedRoomIdOrAlias] = args;
         if (channel === 'all') {
             try {
-                await this.plumbAll(conference, client, roomId);
+                await this.plumbAll(conference);
             } catch {
                 return client.sendNotice(roomId, "Failed to bridge all rooms, see logs");
             }

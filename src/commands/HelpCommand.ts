@@ -21,7 +21,7 @@ import { Conference } from "../Conference";
 export class HelpCommand implements ICommand {
     public readonly prefixes = ["help", "?"];
 
-    public async run(conference: Conference, client: MatrixClient, roomId: string, event: any, args: string[]) {
+    public async run(conference: Conference, client: MatrixClient, roomId: string, event: any) {
         const htmlHelp = "" +
             "<h1>Conference bot help</h1>" +
             "<h4>General:</h4>" +

@@ -430,7 +430,6 @@ export class Scheduler {
                 const resolved = await resolveIdentifiers(userIds);
                 const speakers = resolved.filter(p => p.person.event_role === Role.Speaker);
                 const hosts = resolved.filter(p => p.person.event_role === Role.Host);
-                const coordinators = resolved.filter(p => p.person.event_role === Role.Coordinator);
 
                 const required = [...speakers, ...hosts];
                 const missing: ResolvedPersonIdentifier[] = [];
@@ -470,7 +469,6 @@ export class Scheduler {
                 const resolved = await resolveIdentifiers(userIds);
                 const speakers = resolved.filter(p => p.person.event_role === Role.Speaker);
                 const hosts = resolved.filter(p => p.person.event_role === Role.Host);
-                const coordinators = resolved.filter(p => p.person.event_role === Role.Coordinator);
 
                 const required = [...speakers, ...hosts];
                 const missing: ResolvedPersonIdentifier[] = [];
@@ -510,7 +508,6 @@ export class Scheduler {
                 const resolved = await resolveIdentifiers(userIds);
                 const speakers = resolved.filter(p => p.person.event_role === Role.Speaker);
                 const hosts = resolved.filter(p => p.person.event_role === Role.Host);
-                const coordinators = resolved.filter(p => p.person.event_role === Role.Coordinator);
 
                 const required = [...speakers, ...hosts];
                 const missing: ResolvedPersonIdentifier[] = [];

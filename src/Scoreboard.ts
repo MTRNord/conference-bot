@@ -41,6 +41,11 @@ export interface CachedMessage {
     senderAvatarHttpUrl?: string;
 }
 
+interface ScoreboardJson {
+    version: number;
+    rooms: RoomScoreboard[];
+}
+
 export interface RoomScoreboard {
     /**
      * The start time of the current talk's Q&A session, as a Unix timestamp in milliseconds.
@@ -105,7 +110,7 @@ export class Scoreboard {
      * Expects the scoreboard lock to not be held by the caller.
      */
     public async load() {
-        let json: any;
+        let json: ScoreboardJson;
         try {
             const data = await fs.readFile(this.path, "utf8");
             json = JSON.parse(data);
