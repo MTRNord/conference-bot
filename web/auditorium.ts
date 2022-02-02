@@ -18,7 +18,7 @@ import "./common.scss";
 
 import { controlsEl, makeLivestream, muteButton, videoEl } from "./hls";
 
-const messagesEl = document.querySelector("#messages");
+const messagesEl = document.querySelector<HTMLElement>("#messages");
 
 messagesEl.style.display = 'block';
 muteButton.style.display = 'block';

@@ -18,7 +18,7 @@ import { ICommand } from "./ICommand";
 import { MatrixClient } from "matrix-bot-sdk";
 import { Conference } from "../Conference";
 import config from "../config";
-import { getStartTime, ScheduledTaskType, sortTasks } from "../Scheduler";
+import { getStartTime, sortTasks } from "../Scheduler";
 import moment = require("moment");
 
 export class ScheduleCommand implements ICommand {
@@ -26,36 +26,36 @@ export class ScheduleCommand implements ICommand {
 
     public async run(conference: Conference, client: MatrixClient, roomId: string, event: any, args: string[]) {
         switch (args[0]) {
-        case 'reset': {
-            await config.RUNTIME.scheduler.reset();
-            await client.sendNotice(roomId, "Schedule processing has been reset.");
-        
-        break;
-        }
-        case 'view': {
-            const upcoming = sortTasks(config.RUNTIME.scheduler.inspect());
-            let html = "Upcoming tasks:<ul>";
-            for (const task of upcoming) {
-                const talkRoom = conference.getTalk(task.talk.event_id);
-                if (!talkRoom) continue;
-                const taskStart = moment(getStartTime(task));
-                const formattedTimestamp = taskStart.format("YYYY-MM-DD HH:mm:ss [UTC]ZZ");
-                html += `<li>${formattedTimestamp}: <b>${task.type} on ${await talkRoom.getName()}</b> (<code>${task.id}</code>) ${taskStart.fromNow()}</li>`;
+            case 'reset': {
+                await config.RUNTIME.scheduler.reset();
+                await client.sendNotice(roomId, "Schedule processing has been reset.");
+
+                break;
             }
-            html += "</ul>";
-            await client.sendHtmlNotice(roomId, html);
-        
-        break;
-        }
-        case 'execute': {
-            await config.RUNTIME.scheduler.execute(args[1]);
-            await client.unstableApis.addReactionToEvent(roomId, event['event_id'], '✅');
-        
-        break;
-        }
-        default: {
-            await client.sendNotice(roomId, "Unknown schedule command.");
-        }
+            case 'view': {
+                const upcoming = sortTasks(config.RUNTIME.scheduler.inspect());
+                let html = "Upcoming tasks:<ul>";
+                for (const task of upcoming) {
+                    const talkRoom = conference.getTalk(task.talk.event_id);
+                    if (!talkRoom) continue;
+                    const taskStart = moment(getStartTime(task));
+                    const formattedTimestamp = taskStart.format("YYYY-MM-DD HH:mm:ss [UTC]ZZ");
+                    html += `<li>${formattedTimestamp}: <b>${task.type} on ${await talkRoom.getName()}</b> (<code>${task.id}</code>) ${taskStart.fromNow()}</li>`;
+                }
+                html += "</ul>";
+                await client.sendHtmlNotice(roomId, html);
+
+                break;
+            }
+            case 'execute': {
+                await config.RUNTIME.scheduler.execute(args[1]);
+                await client.unstableApis.addReactionToEvent(roomId, event['event_id'], '✅');
+
+                break;
+            }
+            default: {
+                await client.sendNotice(roomId, "Unknown schedule command.");
+            }
         }
     }
 }

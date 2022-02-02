@@ -44,7 +44,7 @@ if (widgetId) {
         widgetApi.requestCapability(MatrixCapabilities.MSC2931Navigate);
         widgetApi.start();
         await new Promise<void>(resolve => {
-            widgetApi.once("ready", () => resolve());
+            widgetApi?.once("ready", () => resolve());
         });
     })();
 }
@@ -74,7 +74,7 @@ function render(scoreboard: Scoreboard) {
             const timeUntilStart = qaStartTime - Date.now();
             const banner = document.querySelector('#scoreboardQABanner');
             if (timeUntilStart < 0) {
-                banner?.textContent = "Q&A has started";
+                banner.textContent = "Q&A has started";
             } else {
                 const text = `Q&A starts in ${formatDuration(timeUntilStart)}`;
                 if (banner?.textContent !== text) {
@@ -84,10 +84,10 @@ function render(scoreboard: Scoreboard) {
         }
         bannerUpdateTimer = window.setInterval(renderBannerText, 100, scoreboard.qaStartTime);
         renderBannerText(scoreboard.qaStartTime);
-        document.querySelector('#scoreboardQABanner').style.display = 'block';
+        document.querySelector<HTMLElement>('#scoreboardQABanner').style.display = 'block';
     } else {
         // Hide the countdown banner
-        document.querySelector('#scoreboardQABanner').style.display = 'none';
+        document.querySelector<HTMLElement>('#scoreboardQABanner').style.display = 'none';
     }
 
     let html = "";

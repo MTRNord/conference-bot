@@ -51,7 +51,7 @@ export class PentaDb implements DBBackend {
     }
 
     public getSystemName(): string {
-        return "penta";
+        return "pentabarf";
     }
 
     private async connect() {

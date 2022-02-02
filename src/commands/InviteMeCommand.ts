@@ -17,9 +17,6 @@ limitations under the License.
 import { ICommand } from "./ICommand";
 import { LogLevel, MatrixClient } from "matrix-bot-sdk";
 import { Conference } from "../Conference";
-import { LiveWidget } from "../models/LiveWidget";
-import { invitePersonToRoom, ResolvedPersonIdentifier } from "../invites";
-import { Role } from "../db/DbPerson";
 import { logMessage } from "../LogProxy";
 
 export class InviteMeCommand implements ICommand {

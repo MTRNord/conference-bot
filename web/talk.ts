@@ -22,13 +22,13 @@ import { controlsEl, makeLivestream, muteButton, pause, play, videoEl } from "./
 import { addlQuery, isWidget, widgetId } from "./widgets";
 import { formatDuration, getAttr } from "./common";
 
-const messagesEl = document.querySelector("#messages");
-const jitsiContainer = document.querySelector("#jitsiContainer");
-const jitsiUnderlay = document.querySelector("#jitsiUnderlay");
-const liveBanner = document.querySelector("#liveBanner");
-const liveBannerShortText = document.querySelector("#liveBannerShortText");
-const liveBannerLongText = document.querySelector("#liveBannerLongText");
-const joinButton = document.querySelector('#joinButton');
+const messagesEl = document.querySelector<HTMLElement>("#messages");
+const jitsiContainer = document.querySelector<HTMLElement>("#jitsiContainer");
+const jitsiUnderlay = document.querySelector<HTMLElement>("#jitsiUnderlay");
+const liveBanner = document.querySelector<HTMLElement>("#liveBanner");
+const liveBannerShortText = document.querySelector<HTMLElement>("#liveBannerShortText");
+const liveBannerLongText = document.querySelector<HTMLElement>("#liveBannerLongText");
+const joinButton = document.querySelector<HTMLElement>('#joinButton');
 
 const livestreamStartTime = getAttr('org.matrix.confbot.livestream_start_time') ?
     Number.parseInt(getAttr('org.matrix.confbot.livestream_start_time')) :
@@ -46,7 +46,7 @@ if (widgetId) {
         widgetApi.requestCapabilities(VideoConferenceCapabilities);
         widgetApi.start();
         await new Promise<void>(resolve => {
-            widgetApi.once("ready", () => resolve());
+            widgetApi?.once("ready", () => resolve());
         });
         await widgetApi.setAlwaysOnScreen(false);
     })();
@@ -107,7 +107,7 @@ const jitsiOpts = {
     auth: addlQuery["auth"],
 };
 
-joinButton.addEventListener('click', () => {
+joinButton?.addEventListener('click', () => {
     showJitsi();
     joinConference(jitsiOpts, widgetApi, () => onJitsiEnd());
 });

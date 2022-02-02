@@ -20,9 +20,9 @@ import { getAttr } from "./common";
 
 const videoUrl = getAttr('org.matrix.confbot.video_url');
 
-export const videoEl = document.querySelector("#livestream") as HTMLVideoElement;
-export const muteButton = document.querySelector('#muteButton');
-export const controlsEl = document.querySelector("#controlBar");
+export const videoEl = document.querySelector<HTMLElement>("#livestream") as HTMLVideoElement;
+export const muteButton = document.querySelector<HTMLElement>('#muteButton');
+export const controlsEl = document.querySelector<HTMLElement>("#controlBar");
 
 if (isWidget) {
     videoEl.classList.add('widget');
