@@ -42,11 +42,11 @@ export enum ScheduledTaskType {
     TalkCheckin15M = "talk_checkin_15m",
 }
 
-const SKIPPABLE_TASKS = [
+const SKIPPABLE_TASKS = new Set([
     ScheduledTaskType.TalkStart1H,
     ScheduledTaskType.TalkCheckin45M,
     ScheduledTaskType.TalkCheckin30M,
-];
+]);
 
 const KEEP_LAST_TASKS = 200;
 const ACD_SCHEDULER = "org.matrix.confbot.scheduler_info";
@@ -136,8 +136,7 @@ export class Scheduler {
     private pending: { [taskId: string]: ITask } = {};
     private lock = new AwaitLock();
 
-    constructor(private client: MatrixClient, private conference: Conference, private scoreboard: Scoreboard) {
-    }
+    constructor(private client: MatrixClient, private conference: Conference, private scoreboard: Scoreboard) {}
 
     public async prepare() {
         const schedulerData = await this.client.getSafeAccountData<ISchedulerAccountData>(ACD_SCHEDULER, {
@@ -147,7 +146,7 @@ export class Scheduler {
         this.completedIds.push(...(schedulerData?.completed || []));
         this.inAuditoriums.push(...(schedulerData?.inAuditoriums || []));
 
-        if (this.inAuditoriums.length) {
+        if (this.inAuditoriums.length > 0) {
             await this.client.sendNotice(config.managementRoom, `Running schedule in auditoriums: ${this.inAuditoriums.join(', ')}`);
         }
 
@@ -168,7 +167,7 @@ export class Scheduler {
     }
 
     private async persistProgress() {
-        const completedIds = this.completedIds.slice().reverse().slice(0, KEEP_LAST_TASKS).reverse();
+        const completedIds = [...this.completedIds].reverse().slice(0, KEEP_LAST_TASKS).reverse();
         await this.client.setAccountData(ACD_SCHEDULER, {
             completed: completedIds,
             inAuditoriums: this.inAuditoriums,
@@ -177,7 +176,7 @@ export class Scheduler {
 
     private async runTasks() {
         try {
-            const now = (new Date()).getTime();
+            const now = Date.now();
             const pentaDb = await this.conference.getPentaDb();
             await this.lock.acquireAsync();
             LogService.info("Scheduler", "Scheduling tasks");
@@ -188,22 +187,27 @@ export class Scheduler {
                 const upcomingEnds = await pentaDb.getUpcomingTalkEnds(minVar, minVar);
 
                 const scheduleAll = (talks: IDbTalk[], type: ScheduledTaskType) => {
-                    talks.filter(e => !this.completedIds.includes(makeTaskId(type, e)))
-                        .forEach(e => this.tryScheduleTask(type, e));
+                    for (const e of talks.filter(e => !this.completedIds.includes(makeTaskId(type, e))))  this.tryScheduleTask(type, e);
 
-                    if (type === ScheduledTaskType.TalkStart) {
-                        talks.filter(e => !this.completedIds.includes(makeTaskId(ScheduledTaskType.TalkStart5M, e)))
-                            .forEach(e => this.tryScheduleTask(ScheduledTaskType.TalkStart5M, e));
-                    } else if (type === ScheduledTaskType.TalkQA) {
-                        talks.filter(e => !this.completedIds.includes(makeTaskId(ScheduledTaskType.TalkQA5M, e)))
-                            .forEach(e => this.tryScheduleTask(ScheduledTaskType.TalkQA5M, e));
-                    } else if (type === ScheduledTaskType.TalkEnd) {
-                        talks.filter(e => !this.completedIds.includes(makeTaskId(ScheduledTaskType.TalkEnd5M, e)))
-                            .forEach(e => this.tryScheduleTask(ScheduledTaskType.TalkEnd5M, e));
-                        talks.filter(e => !this.completedIds.includes(makeTaskId(ScheduledTaskType.TalkLivestreamEnd1M, e)))
-                            .forEach(e => this.tryScheduleTask(ScheduledTaskType.TalkLivestreamEnd1M, e));
-                        talks.filter(e => !this.completedIds.includes(makeTaskId(ScheduledTaskType.TalkEnd1M, e)))
-                            .forEach(e => this.tryScheduleTask(ScheduledTaskType.TalkEnd1M, e));
+                    switch (type) {
+                    case ScheduledTaskType.TalkStart: {
+                        for (const e of talks.filter(e => !this.completedIds.includes(makeTaskId(ScheduledTaskType.TalkStart5M, e))))  this.tryScheduleTask(ScheduledTaskType.TalkStart5M, e);
+                    
+                    break;
+                    }
+                    case ScheduledTaskType.TalkQA: {
+                        for (const e of talks.filter(e => !this.completedIds.includes(makeTaskId(ScheduledTaskType.TalkQA5M, e))))  this.tryScheduleTask(ScheduledTaskType.TalkQA5M, e);
+                    
+                    break;
+                    }
+                    case ScheduledTaskType.TalkEnd: {
+                        for (const e of talks.filter(e => !this.completedIds.includes(makeTaskId(ScheduledTaskType.TalkEnd5M, e))))  this.tryScheduleTask(ScheduledTaskType.TalkEnd5M, e);
+                        for (const e of talks.filter(e => !this.completedIds.includes(makeTaskId(ScheduledTaskType.TalkLivestreamEnd1M, e))))  this.tryScheduleTask(ScheduledTaskType.TalkLivestreamEnd1M, e);
+                        for (const e of talks.filter(e => !this.completedIds.includes(makeTaskId(ScheduledTaskType.TalkEnd1M, e))))  this.tryScheduleTask(ScheduledTaskType.TalkEnd1M, e);
+                    
+                    break;
+                    }
+                    // No default
                     }
                 };
 
@@ -216,12 +220,12 @@ export class Scheduler {
                 scheduleAll(earlyWarnings, ScheduledTaskType.TalkCheckin15M);
                 scheduleAll(earlyWarnings, ScheduledTaskType.TalkCheckin30M);
                 scheduleAll(earlyWarnings, ScheduledTaskType.TalkCheckin45M);
-            } catch (e) {
-                LogService.error("Scheduler", e);
+            } catch (error) {
+                LogService.error("Scheduler", error);
                 try {
-                    await logMessage(LogLevel.ERROR, "Scheduler", `Error scheduling tasks: ${e?.message || 'unknown error'}`);
-                } catch (e) {
-                    LogService.error("Scheduler", e);
+                    await logMessage(LogLevel.ERROR, "Scheduler", `Error scheduling tasks: ${error?.message || 'unknown error'}`);
+                } catch (error) {
+                    LogService.error("Scheduler", error);
                 }
             } finally {
                 this.lock.release();
@@ -239,7 +243,7 @@ export class Scheduler {
                     const task = this.pending[taskId];
                     const startTime = getStartTime(task);
                     if (startTime > now) continue;
-                    if (SKIPPABLE_TASKS.includes(task.type) && (now - startTime) > 10 * 60 * 1000) continue;
+                    if (SKIPPABLE_TASKS.has(task.type) && (now - startTime) > 10 * 60 * 1000) continue;
                     toExec.push(task);
                 }
                 sortTasks(toExec);
@@ -249,28 +253,28 @@ export class Scheduler {
                     LogService.info("Scheduler", "Running task: " + taskId);
                     try {
                         await this._execute(task);
-                    } catch (e) {
-                        LogService.error("Scheduler", e);
-                        await logMessage(LogLevel.ERROR, "Scheduler", `Error running task ${taskId}: ${e?.message || 'unknown error'}`);
+                    } catch (error) {
+                        LogService.error("Scheduler", error);
+                        await logMessage(LogLevel.ERROR, "Scheduler", `Error running task ${taskId}: ${error?.message || 'unknown error'}`);
                     }
                     delete this.pending[taskId];
                     this.completedIds.push(taskId);
                     didAction = true;
                 }
                 if (didAction) await this.persistProgress();
-            } catch (e) {
-                LogService.error("Scheduler", e);
+            } catch (error) {
+                LogService.error("Scheduler", error);
                 try {
-                    await logMessage(LogLevel.ERROR, "Scheduler", `Error running tasks: ${e?.message || 'unknown error'}`);
-                } catch (e) {
-                    LogService.error("Scheduler", e);
+                    await logMessage(LogLevel.ERROR, "Scheduler", `Error running tasks: ${error?.message || 'unknown error'}`);
+                } catch (error) {
+                    LogService.error("Scheduler", error);
                 }
             } finally {
                 this.lock.release();
             }
             LogService.info("Scheduler", "Done running tasks");
-        } catch (e) {
-            LogService.error("Scheduler", e);
+        } catch (error) {
+            LogService.error("Scheduler", error);
         }
         setTimeout(() => this.runTasks(), RUN_INTERVAL_MS);
     }
@@ -287,7 +291,7 @@ export class Scheduler {
         try {
             const task = this.pending[taskId];
             if (!task) {
-                throw Error(`Task does not exist or is no longer pending: ${taskId}`);
+                throw new Error(`Task does not exist or is no longer pending: ${taskId}`);
             }
             await this._execute(task);
         } finally {
@@ -306,7 +310,8 @@ export class Scheduler {
             return;
         }
 
-        if (task.type === ScheduledTaskType.TalkStart) {
+        switch (task.type) {
+        case ScheduledTaskType.TalkStart: {
             await this.scoreboard.resetScoreboard(confAud.roomId);
             if (!task.talk.prerecorded) {
                 await this.client.sendHtmlText(confTalk.roomId, `<h3>Your talk is not pre-recorded.</h3><p>You are entering the Q&A for your talk's duration now.</p>`);
@@ -326,7 +331,10 @@ export class Scheduler {
                 `<p>During the talk, you can ask questions here for the Q&A at the end. ` +
                 `The questions with the most 👍 votes are most visible to the speaker.</p>`,
             );
-        } else if (task.type === ScheduledTaskType.TalkQA) {
+        
+        break;
+        }
+        case ScheduledTaskType.TalkQA: {
             if (!task.talk.prerecorded) return;
             await this.client.sendHtmlText(
                 confTalk.roomId,
@@ -339,7 +347,10 @@ export class Scheduler {
                 `<h3>Q&A is starting shortly</h3>` +
                 `<p>Ask questions in this room for the speakers - the questions with the most 👍 votes are most visible to the speaker.</p>`,
             );
-        } else if (task.type === ScheduledTaskType.TalkEnd) {
+        
+        break;
+        }
+        case ScheduledTaskType.TalkEnd: {
             await this.client.sendHtmlText(confTalk.roomId, `<h3>Your talk has ended - opening up this room to all attendees.</h3><p>@room - They won't see the history in this room.</p>`);
             const widget = await LiveWidget.forTalk(confTalk, this.client);
             const layout = await LiveWidget.layoutForTalk(widget, null);
@@ -350,7 +361,10 @@ export class Scheduler {
             await makeRoomPublic(confTalk.roomId, this.client);
             const talkPill = await MentionPill.forRoom(confTalk.roomId, this.client);
             await this.client.sendHtmlText(confAud.roomId, `<h3>The talk will end shortly</h3><p>If the speakers are available, they'll be hanging out in ${talkPill.html}</p>`);
-        } else if (task.type === ScheduledTaskType.TalkStart1H) {
+        
+        break;
+        }
+        case ScheduledTaskType.TalkStart1H: {
             if (!task.talk.prerecorded) {
                 await this.client.sendHtmlText(confTalk.roomId, `<h3>Your talk starts in about 1 hour</h3><p><b>Your talk is not pre-recorded.</b> You will have your talk's full duration be Q&A.</p>`);
             } else {
@@ -360,13 +374,19 @@ export class Scheduler {
                 const resolved = (await resolveIdentifiers(userIds)).filter(p => p.mxid).map(p => p.mxid);
                 await config.RUNTIME.checkins.expectCheckinFrom(resolved);
             }
-        } else if (task.type === ScheduledTaskType.TalkStart5M) {
+        
+        break;
+        }
+        case ScheduledTaskType.TalkStart5M: {
             if (!task.talk.prerecorded) {
                 await this.client.sendHtmlText(confTalk.roomId, `<h3>Your talk starts in about 5 minutes</h3><p><b>Your talk is not pre-recorded.</b> Your talk's full duration will be Q&A.</p>`);
             } else {
                 await this.client.sendHtmlText(confTalk.roomId, `<h3>Your talk starts in about 5 minutes</h3><p>Please join the Jitsi conference at the top of this room to prepare for your Q&A.</p>`);
             }
-        } else if (task.type === ScheduledTaskType.TalkQA5M) {
+        
+        break;
+        }
+        case ScheduledTaskType.TalkQA5M: {
             if (getStartTime(task) < task.talk.start_datetime) {
                 // Don't do anything if this talk hasn't started yet, otherwise things get confusing
                 // for the previous talk. The Q&A scoreboard will not show a countdown for this
@@ -384,14 +404,26 @@ export class Scheduler {
                 `Do not wait for it to finish, otherwise you will create a long pause!</p>`,
             );
             await this.scoreboard.showQACountdown(confAud.roomId, task.talk.qa_start_datetime);
-        } else if (task.type === ScheduledTaskType.TalkEnd5M) {
+        
+        break;
+        }
+        case ScheduledTaskType.TalkEnd5M: {
             await this.client.sendHtmlText(confTalk.roomId, `<h3>Your talk ends in about 5 minutes</h3><p>The next talk will start automatically after yours. In 5 minutes, this room will be opened up for anyone to join. They will not be able to see history.</p>`);
             await this.client.sendHtmlText(confAud.roomId, `<h3>This talk ends in about 5 minutes</h3><p>Ask questions here for the speakers!</p>`);
-        } else if (task.type === ScheduledTaskType.TalkLivestreamEnd1M) {
+        
+        break;
+        }
+        case ScheduledTaskType.TalkLivestreamEnd1M: {
             await this.client.sendHtmlText(confTalk.roomId, `<h3>Your talk ends in about 1 minute!</h3><p>The next talk will start automatically after yours. Wrap it up!</p>`);
-        } else if (task.type === ScheduledTaskType.TalkEnd1M) {
+        
+        break;
+        }
+        case ScheduledTaskType.TalkEnd1M: {
             await this.client.sendHtmlText(confAud.roomId, `<h3>This talk ends in about 1 minute!</h3>`);
-        } else if (task.type === ScheduledTaskType.TalkCheckin45M) {
+        
+        break;
+        }
+        case ScheduledTaskType.TalkCheckin45M: {
             if (!task.talk.prerecorded) return;
             const userIds = await this.conference.getInviteTargetsForTalk(confTalk);
             const resolved = await resolveIdentifiers(userIds);
@@ -426,7 +458,10 @@ export class Scheduler {
                 const resolved = (await resolveIdentifiers(userIds)).filter(p => p.mxid).map(p => p.mxid);
                 await config.RUNTIME.checkins.expectCheckinFrom(resolved);
             }
-        } else if (task.type === ScheduledTaskType.TalkCheckin30M) {
+        
+        break;
+        }
+        case ScheduledTaskType.TalkCheckin30M: {
             if (!task.talk.prerecorded) return;
             const userIds = await this.conference.getInviteTargetsForTalk(confTalk);
             const resolved = await resolveIdentifiers(userIds);
@@ -461,7 +496,10 @@ export class Scheduler {
                 const resolved = (await resolveIdentifiers(userIds)).filter(p => p.mxid).map(p => p.mxid);
                 await config.RUNTIME.checkins.expectCheckinFrom(resolved);
             } // else no complaints
-        } else if (task.type === ScheduledTaskType.TalkCheckin15M) {
+        
+        break;
+        }
+        case ScheduledTaskType.TalkCheckin15M: {
             if (!task.talk.prerecorded) return;
             const userIds = await this.conference.getInviteTargetsForTalk(confTalk);
             const resolved = await resolveIdentifiers(userIds);
@@ -498,8 +536,12 @@ export class Scheduler {
                 const resolved = (await resolveIdentifiers(userIds)).filter(p => p.mxid).map(p => p.mxid);
                 await config.RUNTIME.checkins.expectCheckinFrom(resolved);
             } // else no complaints
-        } else {
+        
+        break;
+        }
+        default: {
             await logMessage(LogLevel.WARN, "Scheduler", `Unknown task type for execute(): ${task.type}`);
+        }
         }
     }
 

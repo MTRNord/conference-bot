@@ -83,7 +83,7 @@ export class VerifyCommand implements ICommand {
             for (const talk of talks) {
                 const talkToInvite = await conference.getInviteTargetsForTalk(talk);
                 const talkToMod = await conference.getModeratorsForTalk(talk);
-                if (talkToMod.length || talkToInvite.length) {
+                if (talkToMod.length > 0 || talkToInvite.length > 0) {
                     html += `<b>Talk: ${await talk.getName()} (${await talk.getId()})</b><ul>`;
                     appendPeople(talkToInvite, talkToMod);
                     html += "</ul>";

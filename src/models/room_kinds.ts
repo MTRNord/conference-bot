@@ -157,7 +157,7 @@ export const SPECIAL_INTEREST_CREATION_TEMPLATE = {
 
 export function mergeWithCreationTemplate(template: any, addlProps: any): any {
     const result = {...template};
-    template.initial_state = template.initial_state.slice(); // clone to prevent mutation by accident
+    template.initial_state = [...template.initial_state]; // clone to prevent mutation by accident
     for (const prop of Object.keys(addlProps)) {
         switch (prop) {
             case 'initial_state':

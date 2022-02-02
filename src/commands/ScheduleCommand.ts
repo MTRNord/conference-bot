@@ -25,10 +25,14 @@ export class ScheduleCommand implements ICommand {
     public readonly prefixes = ["schedule"];
 
     public async run(conference: Conference, client: MatrixClient, roomId: string, event: any, args: string[]) {
-        if (args[0] === 'reset') {
+        switch (args[0]) {
+        case 'reset': {
             await config.RUNTIME.scheduler.reset();
             await client.sendNotice(roomId, "Schedule processing has been reset.");
-        } else if (args[0] === 'view') {
+        
+        break;
+        }
+        case 'view': {
             const upcoming = sortTasks(config.RUNTIME.scheduler.inspect());
             let html = "Upcoming tasks:<ul>";
             for (const task of upcoming) {
@@ -40,11 +44,18 @@ export class ScheduleCommand implements ICommand {
             }
             html += "</ul>";
             await client.sendHtmlNotice(roomId, html);
-        } else if (args[0] === 'execute') {
+        
+        break;
+        }
+        case 'execute': {
             await config.RUNTIME.scheduler.execute(args[1]);
             await client.unstableApis.addReactionToEvent(roomId, event['event_id'], '✅');
-        } else {
+        
+        break;
+        }
+        default: {
             await client.sendNotice(roomId, "Unknown schedule command.");
+        }
         }
     }
 }

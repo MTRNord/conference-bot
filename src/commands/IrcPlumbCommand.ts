@@ -25,8 +25,7 @@ const PLUMB_WAIT_MS = 1000;
 export class IrcPlumbCommand implements ICommand {
     public readonly prefixes = ["plumb-irc"];
 
-    constructor(private readonly ircBridge: IRCBridge) {
-    }
+    constructor(private readonly ircBridge: IRCBridge) {}
 
     private async plumbAll(conference: Conference, client: MatrixClient, roomId: string) {
         for (const auditorium of conference.storedAuditoriums) {
@@ -35,9 +34,9 @@ export class IrcPlumbCommand implements ICommand {
                 await this.ircBridge.plumbChannelToRoom(channelName, auditorium.roomId);
                 // Wait before plumbing the next one so as to not overwhelm the poor bridge.
                 await new Promise(r => setTimeout(r, PLUMB_WAIT_MS));
-            } catch (ex) {
+            } catch (error) {
                 await logMessage(LogLevel.WARN, "IrcPlumbCommand", `Could not plumb channel ${channelName} to ${auditorium.roomId}`);
-                LogService.warn("IrcPlumbCommand", `Could not plumb channel ${channelName} to ${auditorium.roomId}:`, ex);
+                LogService.warn("IrcPlumbCommand", `Could not plumb channel ${channelName} to ${auditorium.roomId}:`, error);
             }
         }
         for (const interest of conference.storedInterestRooms) {
@@ -46,9 +45,9 @@ export class IrcPlumbCommand implements ICommand {
                 await this.ircBridge.plumbChannelToRoom(channelName, interest.roomId);
                 // Wait before plumbing the next one so as to not overwhelm the poor bridge.
                 await new Promise(r => setTimeout(r, PLUMB_WAIT_MS));
-            } catch (ex) {
+            } catch (error) {
                 await logMessage(LogLevel.WARN, "IrcPlumbCommand", `Could not plumb channel ${channelName} to ${interest.roomId}`);
-                LogService.warn("IrcPlumbCommand", `Could not plumb channel ${channelName} to ${interest.roomId}:`, ex);
+                LogService.warn("IrcPlumbCommand", `Could not plumb channel ${channelName} to ${interest.roomId}:`, error);
             }
         }
     }
@@ -59,7 +58,7 @@ export class IrcPlumbCommand implements ICommand {
         if (channel === 'all') {
             try {
                 await this.plumbAll(conference, client, roomId);
-            } catch (ex) {
+            } catch {
                 return client.sendNotice(roomId, "Failed to bridge all rooms, see logs");
             }
             await client.sendNotice(roomId, "Rooms bridged to IRC");
@@ -71,18 +70,18 @@ export class IrcPlumbCommand implements ICommand {
         let resolvedRoomId: string;
         try {
             resolvedRoomId = await client.resolveRoom(requestedRoomIdOrAlias);
-        } catch (ex) {
+        } catch {
             return client.sendNotice(roomId, "Sorry, that alias could not be resolved");
         }
         try {
             await client.joinRoom(requestedRoomIdOrAlias);
-        } catch (ex) {
+        } catch {
             return client.sendNotice(roomId, "Could not join that room, is the bot invited?");
         }
         try {
             await this.ircBridge.plumbChannelToRoom(channel, resolvedRoomId);
-        } catch (ex) {
-            LogService.warn("IrcPlumbCommand", ex);
+        } catch (error) {
+            LogService.warn("IrcPlumbCommand", error);
             return await logMessage(LogLevel.WARN, "IrcPlumbCommand", `Could not plumb channel to room`);
         }
         return client.sendNotice(roomId, "Plumbed channel");

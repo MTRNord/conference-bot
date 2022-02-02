@@ -23,17 +23,17 @@ export class DevCommand implements ICommand {
     public readonly prefixes = ["dev"];
 
     public async run(conference: Conference, client: MatrixClient, roomId: string, event: any, args: string[]) {
-        let people: IDbPerson[] = [];
+        const people: IDbPerson[] = [];
         for (const aud of conference.storedAuditoriums) {
             const inviteTargets = await conference.getInviteTargetsForAuditorium(aud, true);
             people.push(...inviteTargets.filter(i => i.event_role === Role.Coordinator));
         }
         const newPeople: IDbPerson[] = [];
-        people.forEach(p => {
+        for (const p of people) {
             if (!newPeople.some(n => n.person_id == p.person_id)) {
                 newPeople.push(p);
             }
-        });
+        }
         await client.sendNotice(roomId, `Total people: ${newPeople.length}`);
     }
 }

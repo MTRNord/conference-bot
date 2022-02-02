@@ -42,8 +42,7 @@ async function resolveBatch(batch: IDbPerson[]): Promise<ResolvedPersonIdentifie
     if (batch.length <= 0) return [];
     const results = await idClient.lookup(batch.map(p => ({address: p.email, kind: "email"})));
     const resolved: ResolvedPersonIdentifier[] = [];
-    for (let i = 0; i < results.length; i++) {
-        const result = results[i];
+    for (const [i, result] of results.entries()) {
         const person = batch[i];
         resolved.push({
             person: person,

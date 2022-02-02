@@ -39,7 +39,7 @@ interface IrcBridgeData {
     roomId: string;
 }
 
-const COMMAND_TIMEOUT_MS = 60000;
+const COMMAND_TIMEOUT_MS = 60_000;
 
 export class IRCBridge {
 
@@ -47,14 +47,14 @@ export class IRCBridge {
     private ircClient: any;
     constructor(private readonly config: IRCBridgeOpts, private readonly mxClient: MatrixClient) {
         if (!config.botNick || !config.botUserId || !config.channelPrefix || !config.port || !config.serverName) {
-            throw Error('Missing configuration options for IRC bridge');
+            throw new Error('Missing configuration options for IRC bridge');
         }
     }
 
     public async deriveChannelName(auditorium: Auditorium) {
         const name = await auditorium.getName();
         if (!name) {
-            throw Error('Auditorium name is empty');
+            throw new Error('Auditorium name is empty');
         }
         return `${this.config.channelPrefix}${name}`;
     }
@@ -62,7 +62,7 @@ export class IRCBridge {
     public async deriveChannelNameSI(interest: InterestRoom) {
         const name = makeLocalpart(await interest.getName(), await interest.getId());
         if (!name) {
-            throw Error('Special interest name is empty');
+            throw new Error('Special interest name is empty');
         }
         return `${this.config.channelPrefix}${name}`;
     }
@@ -110,7 +110,7 @@ export class IRCBridge {
         const result = await this.executeCommand(`plumb ${roomId} ${this.config.serverName} ${channel}`);
         const resultText = result.content.body;
         if (resultText !== 'Room plumbed.') {
-            throw Error(`IRC bridge gave an error: ${resultText}`);
+            throw new Error(`IRC bridge gave an error: ${resultText}`);
         }
         await this.ircClient.send("MODE", channel, "+o", this.config.ircBridgeNick);
         const moderatorNicks = Array.isArray(this.config.moderationBotNick) ? this.config.moderationBotNick : [this.config.moderationBotNick];
@@ -121,7 +121,7 @@ export class IRCBridge {
 
     public async executeCommand(command: string): Promise<MatrixEvent<any>> {
         if (!this.botRoomId) {
-            throw Error('No botRoomId defined. Was start() called?');
+            throw new Error('No botRoomId defined. Was start() called?');
         }
         let requestEventId: string;
         const promise = new Promise<MatrixEvent<any>>((resolve, reject) => {

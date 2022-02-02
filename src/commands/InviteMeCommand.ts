@@ -26,7 +26,7 @@ export class InviteMeCommand implements ICommand {
     public readonly prefixes = ["inviteme", "inviteto"];
 
     public async run(conference: Conference, client: MatrixClient, roomId: string, event: any, args: string[]) {
-        if (!args.length) {
+        if (args.length === 0) {
             return client.replyNotice(roomId, event, "Please specify a room ID or alias");
         }
         const userId = args[1] || event['sender'];
@@ -36,8 +36,8 @@ export class InviteMeCommand implements ICommand {
                     const members = await client.getJoinedRoomMembers(aud.roomId);
                     if (members.includes(userId)) continue;
                     await client.inviteUser(userId, aud.roomId);
-                } catch (e) {
-                    await logMessage(LogLevel.WARN, "InviteMeCommand", `Error inviting ${userId} to ${aud.roomId}: ${e?.message || e?.body?.message}`);
+                } catch (error) {
+                    await logMessage(LogLevel.WARN, "InviteMeCommand", `Error inviting ${userId} to ${aud.roomId}: ${error?.message || error?.body?.message}`);
                 }
             }
             for (const spi of conference.storedInterestRooms) {
@@ -45,8 +45,8 @@ export class InviteMeCommand implements ICommand {
                     const members = await client.getJoinedRoomMembers(spi.roomId);
                     if (members.includes(userId)) continue;
                     await client.inviteUser(userId, spi.roomId);
-                } catch (e) {
-                    await logMessage(LogLevel.WARN, "InviteMeCommand", `Error inviting ${userId} to ${spi.roomId}: ${e?.message || e?.body?.message}`);
+                } catch (error) {
+                    await logMessage(LogLevel.WARN, "InviteMeCommand", `Error inviting ${userId} to ${spi.roomId}: ${error?.message || error?.body?.message}`);
                 }
             }
             await client.replyNotice(roomId, event, "Invite sent");

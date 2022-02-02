@@ -213,7 +213,7 @@ export class Conference {
             let roomId: string;
             try {
                 roomId = await this.client.resolveRoom(roomIdOrAlias);
-            } catch (e) {
+            } catch {
                 // The room probably doesn't exist yet.
                 continue;
             }
@@ -299,7 +299,7 @@ export class Conference {
         for (const alias of roomAliases) {
             try {
                 await this.client.resolveRoom(alias);
-            } catch (e) {
+            } catch {
                 // The room doesn't exist yet, probably.
                 const roomId = await safeCreateRoom(
                     this.client,
@@ -575,38 +575,38 @@ export class Conference {
 
     public async getInviteTargetsForAuditorium(auditorium: Auditorium, backstage = false): Promise<IDbPerson[]> {
         const people = await this.getPeopleForAuditorium(auditorium);
-        const roles = [Role.Coordinator, Role.Host, Role.Speaker];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Coordinator, Role.Host, Role.Speaker]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     public async getInviteTargetsForTalk(talk: Talk): Promise<IDbPerson[]> {
         const people = await this.getPeopleForTalk(talk);
-        const roles = [Role.Speaker, Role.Host, Role.Coordinator];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Speaker, Role.Host, Role.Coordinator]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     public async getInviteTargetsForInterest(int: InterestRoom): Promise<IDbPerson[]> {
         const people = await this.getPeopleForInterest(int);
-        const roles = [Role.Speaker, Role.Host, Role.Coordinator];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Speaker, Role.Host, Role.Coordinator]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     public async getModeratorsForAuditorium(auditorium: Auditorium): Promise<IDbPerson[]> {
         const people = await this.getPeopleForAuditorium(auditorium);
-        const roles = [Role.Coordinator];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Coordinator]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     public async getModeratorsForTalk(talk: Talk): Promise<IDbPerson[]> {
         const people = await this.getPeopleForTalk(talk);
-        const roles = [Role.Coordinator, Role.Speaker, Role.Host];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Coordinator, Role.Speaker, Role.Host]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     public async getModeratorsForInterest(int: InterestRoom): Promise<IDbPerson[]> {
         const people = await this.getPeopleForInterest(int);
-        const roles = [Role.Host, Role.Coordinator];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Host, Role.Coordinator]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     private async resolvePeople(people: IDbPerson[]): Promise<IDbPerson[]> {

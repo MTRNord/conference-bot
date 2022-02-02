@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import * as YAML from "yaml";
-import * as fs from "fs";
+import * as fs from "node:fs";
 import { MatrixClient, UserID } from "matrix-bot-sdk";
 import config from "../config";
 
@@ -30,7 +30,7 @@ import config from "../config";
     const domain = (new UserID(await client.getUserId())).domain;
 
     for (const person of yaml['people']) {
-        const dottedName = person['name'].toLowerCase().replace(/ /g, '.').replace(/[^a-z0-9.]/g, '');
+        const dottedName = person['name'].toLowerCase().replace(/ /g, '.').replace(/[^\d.a-z]/g, '');
         if (Math.random() < 0.25) {
             person['mxid'] = `@${dottedName}:${domain}`;
         }

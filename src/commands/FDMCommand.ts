@@ -58,7 +58,7 @@ export class FDMCommand implements ICommand {
                 try {
                     if (person.mxid && inBsJoined.includes(person.mxid)) continue;
                     await invitePersonToRoom(person, infBackstage);
-                } catch (e) {
+                } catch {
                     await logMessage(LogLevel.ERROR, "InviteCommand", `Error inviting ${person.mxid} / ${person.person.person_id} to ${infBackstage} - ignoring`);
                 }
             }
@@ -67,13 +67,13 @@ export class FDMCommand implements ICommand {
                 try {
                     if (person.mxid && volJoined.includes(person.mxid)) continue;
                     await invitePersonToRoom(person, vol);
-                } catch (e) {
+                } catch {
                     await logMessage(LogLevel.ERROR, "InviteCommand", `Error inviting ${person.mxid} / ${person.person.person_id} to ${vol} - ignoring`);
                 }
                 try {
                     if (person.mxid && volBsJoined.includes(person.mxid)) continue;
                     await invitePersonToRoom(person, volBackstage);
-                } catch (e) {
+                } catch {
                     await logMessage(LogLevel.ERROR, "InviteCommand", `Error inviting ${person.mxid} / ${person.person.person_id} to ${volBackstage} - ignoring`);
                 }
             }

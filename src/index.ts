@@ -19,7 +19,7 @@ limitations under the License.
 // TODO: Start webserver
 
 import { LogLevel, LogService, MatrixClient, SimpleFsStorageProvider, UserID } from "matrix-bot-sdk";
-import * as path from "path";
+import * as path from "node:path";
 import config from "./config";
 import { ICommand } from "./commands/ICommand";
 import { HelpCommand } from "./commands/HelpCommand";
@@ -170,7 +170,7 @@ function registerCommands() {
 
         // Check age just in case we recently started
         const now = Date.now();
-        if (Math.abs(now - event['origin_server_ts']) >= 900000) { // 15min
+        if (Math.abs(now - event['origin_server_ts']) >= 900_000) { // 15min
             LogService.warn("index", `Ignoring ${event['event_id']} in management room due to age`);
             return;
         }
@@ -190,7 +190,7 @@ function registerCommands() {
         const prefixUsed = prefixes.find(p => content['body'].startsWith(p));
         if (!prefixUsed) return;
 
-        const restOfBody = content['body'].substring(prefixUsed.length).trim();
+        const restOfBody = content['body'].slice(prefixUsed.length).trim();
         const args = restOfBody.split(' ');
         if (args.length <= 0) {
             return await client.replyNotice(roomId, event, `Invalid command. Try ${prefixUsed.trim()} help`);
@@ -203,9 +203,9 @@ function registerCommands() {
                     return await command.run(conference, client, roomId, event, args.slice(1));
                 }
             }
-        } catch (e) {
-            LogService.error("index", "Error processing command: ", e);
-            return await client.replyNotice(roomId, event, `There was an error processing your command: ${e.message}`);
+        } catch (error) {
+            LogService.error("index", "Error processing command: ", error);
+            return await client.replyNotice(roomId, event, `There was an error processing your command: ${error.message}`);
         }
 
         return await client.replyNotice(roomId, event, `Unknown command. Try ${prefixUsed.trim()} help`);

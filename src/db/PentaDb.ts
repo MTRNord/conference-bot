@@ -48,13 +48,13 @@ export class PentaDb {
         });
     }
 
-    public async connect() {
+    private async connect() {
         if (this.isConnected) return;
         await this.client.connect();
         this.isConnected = true;
     }
 
-    public async disconnect() {
+    private async disconnect() {
         if (!this.isConnected) return;
         await this.client.end();
         this.isConnected = false;
@@ -165,8 +165,8 @@ export class PentaDb {
                     const parsed = new UserID(userId);
                     r.matrix_id = parsed.toString().trim();
                 }
-            } catch (e) {
-                LogService.warn("PentaDb", "Invalid user ID: " + userId, e);
+            } catch (error) {
+                LogService.warn("PentaDb", "Invalid user ID: " + userId, error);
                 r.matrix_id = null; // force clear
             }
             return r;

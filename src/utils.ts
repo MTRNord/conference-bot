@@ -27,7 +27,7 @@ import {
 } from "matrix-bot-sdk";
 import { logMessage } from "./LogProxy";
 import * as htmlEscape from "escape-html";
-import * as crypto from "crypto";
+import * as crypto from "node:crypto";
 import config from "./config";
 
 export async function replaceRoomIdsWithPills(client: MatrixClient, text: string, roomIds: string[] | string, msgtype: MessageType = "m.text"): Promise<TextualMessageEventContent> {
@@ -41,7 +41,7 @@ export async function replaceRoomIdsWithPills(client: MatrixClient, text: string
     };
 
     const escapeRegex = (v: string): string => {
-        return v.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        return v.replace(/[$()*+./?[\\\]^{|}-]/g, '\\$&');
     };
 
     const viaServers = [(new UserID(await client.getUserId())).domain];
@@ -49,10 +49,10 @@ export async function replaceRoomIdsWithPills(client: MatrixClient, text: string
         let alias = roomId;
         try {
             alias = (await client.getPublishedAlias(roomId)) || roomId;
-        } catch (e) {
+        } catch (error) {
             // This is a recursive call, so tell the function not to try and call us
             await logMessage(LogLevel.WARN, "utils", `Failed to resolve room alias for ${roomId} - see console for details`, null, true);
-            LogService.warn("utils", e);
+            LogService.warn("utils", error);
         }
         const regexRoomId = new RegExp(escapeRegex(roomId), "g");
         content.body = content.body.replace(regexRoomId, alias);

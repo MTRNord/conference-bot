@@ -20,7 +20,7 @@ import config from "./config";
 import { base32 } from "rfc4648";
 import { LogService } from "matrix-bot-sdk";
 import { sha256 } from "./utils";
-import * as dns from "dns";
+import * as dns from "node:dns";
 import { Scoreboard } from "./Scoreboard";
 import { LiveWidget } from "./models/LiveWidget";
 import { IDbTalk } from "./db/DbTalk";
@@ -37,7 +37,7 @@ export function renderAuditoriumWidget(req: Request, res: Response) {
 
     const streamUrl = template(config.livestream.auditoriumUrl, {
         id: audId.toLowerCase(),
-        sId: audId.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        sId: audId.toLowerCase().replace(/[^\da-z]/g, ''),
     });
 
     return res.render('auditorium.liquid', {
@@ -171,7 +171,7 @@ export async function rtmpRedirect(req: Request, res: Response) {
 
         // Redirect to RTMP URL
         const hostname = template(config.livestream.onpublish.rtmpHostnameTemplate, {
-            squishedAudId: (await talk.getAuditoriumId()).replace(/[^a-zA-Z0-9]/g, '').toLowerCase(),
+            squishedAudId: (await talk.getAuditoriumId()).replace(/[^\dA-Za-z]/g, '').toLowerCase(),
         });
         const ip = await dns.promises.resolve(hostname);
         const uri = template(config.livestream.onpublish.rtmpUrlTemplate, {
@@ -179,8 +179,8 @@ export async function rtmpRedirect(req: Request, res: Response) {
             saltedHash: sha256((await talk.getId()) + '.' + config.livestream.onpublish.salt),
         });
         return res.redirect(uri);
-    } catch (e) {
-        LogService.error("web", "Error trying to do onpublish:", e);
+    } catch (error) {
+        LogService.error("web", "Error trying to do onpublish:", error);
         return res.sendStatus(500);
     }
 }

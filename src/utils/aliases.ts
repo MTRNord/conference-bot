@@ -27,9 +27,9 @@ export interface ICanonicalAliasContent {
 export async function getCanonicalAliasInfo(client: MatrixClient, roomId: string): Promise<ICanonicalAliasContent> {
     try {
         return await client.getRoomStateEvent(roomId, "m.room.canonical_alias", "");
-    } catch (e) {
+    } catch (error) {
         // assume no state
-        LogService.warn("utils/alias", e);
+        LogService.warn("utils/alias", error);
         return {alias: null, alt_aliases: []};
     }
 }
@@ -51,8 +51,8 @@ export async function safeAssignAlias(client: MatrixClient, roomId: string, loca
         }
         aliasInfo.alt_aliases.push(localpart);
         await client.sendStateEvent(roomId, "m.room.canonical_alias", "", aliasInfo);
-    } catch (e) {
-        await logMessage(LogLevel.WARN, "utils/alias", `Non-fatal error trying to assign '${localpart}' as an alias to ${roomId} - ${e.message}`);
+    } catch (error) {
+        await logMessage(LogLevel.WARN, "utils/alias", `Non-fatal error trying to assign '${localpart}' as an alias to ${roomId} - ${error.message}`);
     }
 }
 

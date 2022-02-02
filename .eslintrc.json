@@ -1,0 +1,16 @@
+{
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "extends": [
+        "plugin:@typescript-eslint/recommended",
+        "plugin:unicorn/recommended"
+    ],
+    "rules": {
+        "unicorn/prevent-abbreviations": "off",
+        "unicorn/filename-case": "off",
+        "unicorn/prefer-ternary": "off",
+        "unicorn/no-lonely-if": "off"
+    }
+}
