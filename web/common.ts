@@ -25,8 +25,11 @@ export function formatDuration(duration: number): string {
     return `${minutes}:${seconds}`;
 }
 
-export function getAttr(name: string): string {
-    return [...document.querySelectorAll('meta')]
-        .find(t => t.name === name)
-        .getAttribute('content');
+export function getAttr(name: string): string | undefined {
+    const attr = [...document.querySelectorAll('meta')].find(t => t.name === name)?.getAttribute('content');
+    // Hack to use undefined instead of null
+    if (!attr) {
+        return undefined;
+    }
+    return attr;
 }

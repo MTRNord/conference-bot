@@ -74,20 +74,20 @@ function render(scoreboard: Scoreboard) {
             const timeUntilStart = qaStartTime - Date.now();
             const banner = document.querySelector('#scoreboardQABanner');
             if (timeUntilStart < 0) {
-                banner.textContent = "Q&A has started";
+                banner!.textContent = "Q&A has started";
             } else {
                 const text = `Q&A starts in ${formatDuration(timeUntilStart)}`;
                 if (banner?.textContent !== text) {
-                    banner.textContent = text;
+                    banner!.textContent = text;
                 }
             }
         }
         bannerUpdateTimer = window.setInterval(renderBannerText, 100, scoreboard.qaStartTime);
         renderBannerText(scoreboard.qaStartTime);
-        document.querySelector<HTMLElement>('#scoreboardQABanner').style.display = 'block';
+        document.querySelector<HTMLElement>('#scoreboardQABanner')!.style.display = 'block';
     } else {
         // Hide the countdown banner
-        document.querySelector<HTMLElement>('#scoreboardQABanner').style.display = 'none';
+        document.querySelector<HTMLElement>('#scoreboardQABanner')!.style.display = 'none';
     }
 
     let html = "";
@@ -122,17 +122,19 @@ function render(scoreboard: Scoreboard) {
 
         html += "</div>";
     }
-    upvoteEl.innerHTML = html;
+    upvoteEl!.innerHTML = html;
     for (const innerText of innerTexts) {
-        document.querySelector(`#${innerText[0]}`).textContent = innerText[1];
+        document.querySelector(`#${innerText[0]}`)!.textContent = innerText[1];
     }
 }
 
 function doFetch() {
-    fetch(`/scoreboard/${encodeURIComponent(forRoomId)}`).then(r => r.json()).then(r => {
-        render(r);
-        setTimeout(doFetch, 3000);
-    }).catch(() => setTimeout(doFetch, 15_000));
+    if (forRoomId) {
+        fetch(`/scoreboard/${encodeURIComponent(forRoomId)}`).then(r => r.json()).then(r => {
+            render(r);
+            setTimeout(doFetch, 3000);
+        }).catch(() => setTimeout(doFetch, 15_000));
+    }
 }
 
 function intercept(ev) {

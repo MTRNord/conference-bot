@@ -31,10 +31,10 @@ const liveBannerLongText = document.querySelector<HTMLElement>("#liveBannerLongT
 const joinButton = document.querySelector<HTMLElement>('#joinButton');
 
 const livestreamStartTime = getAttr('org.matrix.confbot.livestream_start_time') ?
-    Number.parseInt(getAttr('org.matrix.confbot.livestream_start_time')) :
+    Number.parseInt(getAttr('org.matrix.confbot.livestream_start_time') || "") :
     undefined;
 const livestreamEndTime = getAttr('org.matrix.confbot.livestream_end_time') ?
-    Number.parseInt(getAttr('org.matrix.confbot.livestream_end_time')) :
+    Number.parseInt(getAttr('org.matrix.confbot.livestream_end_time') || "") :
     undefined;
 
 let widgetApi: WidgetApi | undefined;
@@ -53,9 +53,9 @@ if (widgetId) {
 }
 
 
-messagesEl.style.display = 'block';
+messagesEl!.style.display = 'block';
 if (isWidget) {
-    joinButton.style.display = 'block';
+    joinButton!.style.display = 'block';
 }
 
 makeLivestream(showVideo);
@@ -64,15 +64,15 @@ let widgetMode: "video" | "jitsi" = "video";
 
 function showVideo(ready = true) {
     if (widgetApi) widgetApi.setAlwaysOnScreen(false);
-    jitsiContainer.style.display = 'none';
-    jitsiUnderlay.style.display = 'none';
-    messagesEl.style.display = ready ? 'none' : 'block';
+    jitsiContainer!.style.display = 'none';
+    jitsiUnderlay!.style.display = 'none';
+    messagesEl!.style.display = ready ? 'none' : 'block';
     videoEl.style.display = ready ? 'block' : 'none';
-    controlsEl.style.display = 'block';
+    controlsEl!.style.display = 'block';
     if (isWidget) {
-        joinButton.style.display = 'inline';
+        joinButton!.style.display = 'inline';
     }
-    muteButton.style.display = ready ? 'inline' : 'none';
+    muteButton!.style.display = ready ? 'inline' : 'none';
 
     widgetMode = "video";
     updateLivestreamBanner();
@@ -81,11 +81,11 @@ function showVideo(ready = true) {
 function showJitsi() {
     pause();
     if (widgetApi) widgetApi.setAlwaysOnScreen(true);
-    jitsiContainer.style.display = 'block';
-    jitsiUnderlay.style.display = 'block';
-    messagesEl.style.display = 'none';
+    jitsiContainer!.style.display = 'block';
+    jitsiUnderlay!.style.display = 'block';
+    messagesEl!.style.display = 'none';
     videoEl.style.display = 'none';
-    controlsEl.style.display = 'none';
+    controlsEl!.style.display = 'none';
 
     widgetMode = "jitsi";
     updateLivestreamBanner();
@@ -123,7 +123,7 @@ function setLiveBannerVisible(visible: boolean) {
     }
 
     liveBannerVisible = visible;
-    liveBanner.style.display = visible ? 'block' : 'none';
+    liveBanner!.style.display = visible ? 'block' : 'none';
 }
 
 /**
@@ -133,10 +133,10 @@ function setLiveBannerVisible(visible: boolean) {
  */
 function setLiveBannerText(shortText: string, longText: string) {
     if (liveBannerShortText?.textContent !== shortText) {
-        liveBannerShortText.textContent = shortText;
+        liveBannerShortText!.textContent = shortText;
     }
     if (liveBannerLongText?.textContent !== longText) {
-        liveBannerLongText.textContent = longText;
+        liveBannerLongText!.textContent = longText;
     }
 }
 

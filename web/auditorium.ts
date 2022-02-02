@@ -20,13 +20,13 @@ import { controlsEl, makeLivestream, muteButton, videoEl } from "./hls";
 
 const messagesEl = document.querySelector<HTMLElement>("#messages");
 
-messagesEl.style.display = 'block';
-muteButton.style.display = 'block';
-controlsEl.style.display = 'block';
+messagesEl!.style.display = 'block';
+muteButton!.style.display = 'block';
+controlsEl!.style.display = 'block';
 makeLivestream(showVideo);
 
 function showVideo(ready = true) {
-    messagesEl.style.display = ready ? 'none' : 'block';
+    messagesEl!.style.display = ready ? 'none' : 'block';
     videoEl.style.display = ready ? 'block' : 'none';
-    muteButton.style.display = ready ? 'inline' : 'none';
+    muteButton!.style.display = ready ? 'inline' : 'none';
 }

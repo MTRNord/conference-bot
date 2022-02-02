@@ -111,8 +111,8 @@ muteButton?.addEventListener('click', () => {
 
 videoEl.addEventListener('volumechange', () => {
     if (videoEl.muted) {
-        muteButton.innerHTML = "Audio Muted: Click to unmute";
+        muteButton!.innerHTML = "Audio Muted: Click to unmute";
     } else {
-        muteButton.innerHTML = "Mute";
+        muteButton!.innerHTML = "Mute";
     }
 });
