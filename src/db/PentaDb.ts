@@ -141,7 +141,7 @@ export class PentaDb implements DBBackend {
     }
 
     private postprocessDbTalks(rows: IRawDbTalk[]): IDbTalk[] {
-        return rows.map(this.postprocessDbTalk);
+        return rows.map(talk => this.postprocessDbTalk(talk));
     }
 
     private sanitizeRecords(rows: IDbPerson[]): IDbPerson[] {
@@ -157,7 +157,7 @@ export class PentaDb implements DBBackend {
                 }
             } catch (error) {
                 LogService.warn("PentaDb", "Invalid user ID: " + userId, error);
-                r.matrix_id = null; // force clear
+                r.matrix_id = undefined; // force clear
             }
             return r;
         });

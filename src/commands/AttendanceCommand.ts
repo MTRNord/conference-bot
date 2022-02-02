@@ -24,6 +24,17 @@ import { COLOR_GREEN, COLOR_RED } from "../models/colors";
 export class AttendanceCommand implements ICommand {
     public readonly prefixes = ["attendance"];
 
+    private htmlNum(n: number, invert = false): string {
+        if (Number.isNaN(n)) {
+            n = 0;
+        }
+        if (invert ? (n > 30) : (n < 75)) {
+            return `<b><font color='${COLOR_RED}'>${n}%</font></b>`;
+        } else {
+            return `<b><font color='${COLOR_GREEN}'>${n}%</font></b>`;
+        }
+    }
+
     public async run(conference: Conference, client: MatrixClient, roomId: string, event: any, args: string[]) {
         await client.sendNotice(roomId, "Calculating...");
 
@@ -33,16 +44,6 @@ export class AttendanceCommand implements ICommand {
 
         const targetAudId = args[0];
 
-        const htmlNum = (n: number, invert = false): string => {
-            if (Number.isNaN(n)) {
-                n = 0;
-            }
-            if (invert ? (n > 30) : (n < 75)) {
-                return `<b><font color='${COLOR_RED}'>${n}%</font></b>`;
-            } else {
-                return `<b><font color='${COLOR_GREEN}'>${n}%</font></b>`;
-            }
-        }
 
         let html = "<ul>";
         const append = async (invitePeople: IDbPerson[], bsPeople: IDbPerson[], name: string, roomId: string, bsRoomId: string, withHtml: boolean) => {
@@ -60,7 +61,7 @@ export class AttendanceCommand implements ICommand {
             totalJoined += joined;
             totalEmails += emailInvites;
 
-            if (withHtml) html += `<li><b>${name}</b> ${htmlNum(acceptedPct)} have joined, ${htmlNum(emailPct, true)} have emails waiting`;
+            if (withHtml) html += `<li><b>${name}</b> ${this.htmlNum(acceptedPct)} have joined, ${this.htmlNum(emailPct, true)} have emails waiting`;
 
             if (bsRoomId) {
                 const bsInviteTargets = await resolveIdentifiers(bsPeople);
@@ -70,7 +71,7 @@ export class AttendanceCommand implements ICommand {
                 const bsAcceptedPct = Math.round((bsJoined / bsInviteTargets.length) * 100);
                 const bsEmailPct = Math.round((bsEmailInvites / bsInviteTargets.length) * 100);
 
-                if (withHtml)  html += ` (backstage: ${htmlNum(bsAcceptedPct)} joined, ${htmlNum(bsEmailPct, true)}% emails)`;
+                if (withHtml) html += ` (backstage: ${this.htmlNum(bsAcceptedPct)} joined, ${this.htmlNum(bsEmailPct, true)}% emails)`;
 
                 totalInvites += bsInviteTargets.length;
                 totalJoined += bsJoined;
@@ -89,7 +90,7 @@ export class AttendanceCommand implements ICommand {
         for (const spiRoom of conference.storedInterestRooms) {
             const doAppend = targetAudId && (targetAudId === "all" || targetAudId === await spiRoom.getId());
             const inviteTargets = await conference.getInviteTargetsForInterest(spiRoom);
-            await append(inviteTargets, null, await spiRoom.getId(), spiRoom.roomId, null, doAppend);
+            await append(inviteTargets, undefined, await spiRoom.getId(), spiRoom.roomId, undefined, doAppend);
         }
         html += "</ul>";
 
@@ -100,7 +101,7 @@ export class AttendanceCommand implements ICommand {
         const acceptedPct = Math.round((totalJoined / totalInvites) * 100);
         const emailPct = Math.round((totalEmails / totalInvites) * 100);
 
-        html = `<b>Summary:</b> ${htmlNum(acceptedPct)} have joined, ${htmlNum(emailPct, true)} have pending emails. ${targetAudId ? '<hr />' : ''}${html}`;
+        html = `<b>Summary:</b> ${this.htmlNum(acceptedPct)} have joined, ${this.htmlNum(emailPct, true)} have pending emails. ${targetAudId ? '<hr />' : ''}${html}`;
 
         await client.replyHtmlNotice(roomId, event, html);
     }

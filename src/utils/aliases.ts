@@ -30,7 +30,7 @@ export async function getCanonicalAliasInfo(client: MatrixClient, roomId: string
     } catch (error) {
         // assume no state
         LogService.warn("utils/alias", error);
-        return {alias: null, alt_aliases: []};
+        return { alias: undefined, alt_aliases: [] };
     }
 }
 

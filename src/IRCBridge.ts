@@ -30,7 +30,7 @@ export interface IRCBridgeOpts {
     port: number;
     botUserId: string;
     channelPrefix: string;
-    moderationBotNick: string|string[];
+    moderationBotNick: string | string[];
     ircBridgeNick: string;
     secure: boolean;
 }
@@ -96,7 +96,7 @@ export class IRCBridge {
             secure: this.config.secure !== undefined ? this.config.secure : true, // Default to true
         });
         this.ircClient.on("error", (...args) => {
-            console.warn("irc client got an error:", args)
+            console.warn("irc client got an error:", args);
         });
     }
 
@@ -123,9 +123,12 @@ export class IRCBridge {
         if (!this.botRoomId) {
             throw new Error('No botRoomId defined. Was start() called?');
         }
-        let requestEventId: string;
+        const requestEventId = await this.mxClient.sendText(this.botRoomId, `!${command}`);
         const promise = new Promise<MatrixEvent<any>>((resolve, reject) => {
-            let timeout: NodeJS.Timeout;
+            const timeout = setTimeout(() => {
+                this.mxClient.removeListener("room.message", handlerFn);
+                reject(new Error('Timed out waiting for bridge response'));
+            }, COMMAND_TIMEOUT_MS);
             const handlerFn = (roomId, event) => {
                 if (roomId !== this.botRoomId) {
                     return;
@@ -135,13 +138,8 @@ export class IRCBridge {
                     clearTimeout(timeout);
                 }
             };
-            timeout = setTimeout(() => {
-                this.mxClient.removeListener("room.message", handlerFn);
-                reject(new Error('Timed out waiting for bridge response'));
-            }, COMMAND_TIMEOUT_MS);
             this.mxClient.on("room.message", handlerFn);
         });
-        requestEventId = await this.mxClient.sendText(this.botRoomId, `!${command}`);
         return promise;
     }
 }

@@ -22,22 +22,22 @@ import { controlsEl, makeLivestream, muteButton, pause, play, videoEl } from "./
 import { addlQuery, isWidget, widgetId } from "./widgets";
 import { formatDuration, getAttr } from "./common";
 
-const messagesEl = document.getElementById("messages");
-const jitsiContainer = document.getElementById("jitsiContainer");
-const jitsiUnderlay = document.getElementById("jitsiUnderlay");
-const liveBanner = document.getElementById("liveBanner");
-const liveBannerShortText = document.getElementById("liveBannerShortText");
-const liveBannerLongText = document.getElementById("liveBannerLongText");
-const joinButton = document.getElementById('joinButton');
+const messagesEl = document.querySelector("#messages");
+const jitsiContainer = document.querySelector("#jitsiContainer");
+const jitsiUnderlay = document.querySelector("#jitsiUnderlay");
+const liveBanner = document.querySelector("#liveBanner");
+const liveBannerShortText = document.querySelector("#liveBannerShortText");
+const liveBannerLongText = document.querySelector("#liveBannerLongText");
+const joinButton = document.querySelector('#joinButton');
 
 const livestreamStartTime = getAttr('org.matrix.confbot.livestream_start_time') ?
-    parseInt(getAttr('org.matrix.confbot.livestream_start_time')) :
-    null;
+    Number.parseInt(getAttr('org.matrix.confbot.livestream_start_time')) :
+    undefined;
 const livestreamEndTime = getAttr('org.matrix.confbot.livestream_end_time') ?
-    parseInt(getAttr('org.matrix.confbot.livestream_end_time')) :
-    null;
+    Number.parseInt(getAttr('org.matrix.confbot.livestream_end_time')) :
+    undefined;
 
-let widgetApi: WidgetApi = null;
+let widgetApi: WidgetApi | undefined;
 
 // Start widget API as early as possible
 if (widgetId) {
@@ -105,14 +105,14 @@ const jitsiOpts = {
     userId: addlQuery["userId"],
     roomId: addlQuery["roomId"],
     auth: addlQuery["auth"],
-}
+};
 
 joinButton.addEventListener('click', () => {
     showJitsi();
     joinConference(jitsiOpts, widgetApi, () => onJitsiEnd());
 });
 
-let liveBannerVisible: boolean = false;
+let liveBannerVisible = false;
 /**
  * Shows or hides the live banner.
  * @param visible `true` to show the live banner; `false` to hide it.
@@ -132,11 +132,11 @@ function setLiveBannerVisible(visible: boolean) {
  * @param longText The text to show when there is sufficient horizontal space.
  */
 function setLiveBannerText(shortText: string, longText: string) {
-    if (liveBannerShortText.innerText !== shortText) {
-        liveBannerShortText.innerText = shortText;
+    if (liveBannerShortText?.textContent !== shortText) {
+        liveBannerShortText.textContent = shortText;
     }
-    if (liveBannerLongText.innerText !== longText) {
-        liveBannerLongText.innerText = longText;
+    if (liveBannerLongText?.textContent !== longText) {
+        liveBannerLongText.textContent = longText;
     }
 }
 
@@ -144,11 +144,11 @@ function setLiveBannerText(shortText: string, longText: string) {
  * Updates the livestream banner.
  * @returns The interval until the next update, in milliseconds.
  */
-function updateLivestreamBanner(): number | null {
-    if (livestreamStartTime == null || livestreamEndTime == null) {
+function updateLivestreamBanner(): number | undefined {
+    if (livestreamStartTime == undefined || livestreamEndTime == undefined) {
         // Livestream start and end time are unavailable.
         setLiveBannerVisible(false);
-        return null;
+        return undefined;
     }
 
     const now = Date.now();
@@ -186,7 +186,7 @@ function updateLivestreamBanner(): number | null {
     } else {
         // The livestream has ended.
         setLiveBannerVisible(false);
-        return null;
+        return undefined;
     }
 }
 

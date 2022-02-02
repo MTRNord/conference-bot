@@ -40,7 +40,8 @@ export class BuildCommand implements ICommand {
             await conference.createDb(parsed.conference);
         }
 
-        const spacePill = await MentionPill.forRoom((await conference.getSpace()).roomId, client);
+        const space = await conference.getSpace();
+        const spacePill = await MentionPill.forRoom(space.roomId, client);
         const messagePrefix = "Conference prepared! Making rooms for later use (this will take a while)...";
         const reply = RichReply.createFor(roomId, event,
             messagePrefix + "\n\nYour conference's space is at " + spacePill.text,
@@ -76,8 +77,8 @@ export class BuildCommand implements ICommand {
             if (!pentaAud) return await logMessage(LogLevel.ERROR, "BuildCommand", `Cannot find auditorium: ${audId}`);
 
             const allTalks: ITalk[] = [];
-            for (const ea of Object.values(pentaAud.talksByDate))  allTalks.push(...ea);
-            const pentaTalk =  allTalks.find(t => t.id === talkId);
+            for (const ea of Object.values(pentaAud.talksByDate)) allTalks.push(...ea);
+            const pentaTalk = allTalks.find(t => t.id === talkId);
             if (!pentaTalk) return await logMessage(LogLevel.ERROR, "BuildCommand", `Cannot find talk in room: ${audId} ${talkId}`);
 
             await conference.createAuditoriumBackstage(pentaAud);
@@ -135,7 +136,7 @@ export class BuildCommand implements ICommand {
                     );
 
                     for (const dayTalks of Object.values(auditorium.talksByDate)
-                        .map(dayTalks => dayTalks.map(talk => [talk, confAud] as [ITalk, Auditorium])))  talks.push(...dayTalks);
+                        .map(dayTalks => dayTalks.map(talk => [talk, confAud] as [ITalk, Auditorium]))) talks.push(...dayTalks);
                 }
 
                 if (!args.includes("notalks")) {

@@ -15,7 +15,7 @@
     "build:ts": "tsc",
     "build:web": "webpack",
     "run:merge-roles": "yarn build && node lib/scripts/merge-roles.js",
-    "lint": "eslint src/**"
+    "lint": "eslint src/** web/**"
   },
   "dependencies": {
     "await-lock": "^2.1.0",

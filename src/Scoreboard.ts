@@ -17,7 +17,7 @@ limitations under the License.
 import { Conference } from "./Conference";
 import { LogService, MatrixClient, Permalinks, UserID } from "matrix-bot-sdk";
 import AwaitLock from "await-lock";
-import {promises as fs} from "node:fs";
+import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import config from "./config";
 import { isEmojiVariant } from "./utils";
@@ -47,7 +47,7 @@ export interface RoomScoreboard {
      *
      * When provided, a countdown or in-progress indicator is shown on the scoreboard.
      */
-    qaStartTime: number | null;
+    qaStartTime?: number;
     messages: RoomMessage[];
 }
 
@@ -57,7 +57,7 @@ export interface CachedScoreboard {
      *
      * When provided, a countdown or in-progress indicator is shown on the scoreboard.
      */
-    qaStartTime: number | null;
+    qaStartTime?: number;
     ordered: CachedMessage[];
 }
 
@@ -171,7 +171,7 @@ export class Scoreboard {
         await this.lock.acquireAsync();
         try {
             this.byRoom[roomId] = {
-                qaStartTime: null,
+                qaStartTime: undefined,
                 messages: [],
             };
             await this.calculateRoom(roomId);
@@ -192,9 +192,9 @@ export class Scoreboard {
         try {
             if (!(roomId in this.byRoom)) {
                 this.byRoom[roomId] = {
-                    qaStartTime: null,
+                    qaStartTime: undefined,
                     messages: [],
-                }
+                };
             }
 
             this.byRoom[roomId].qaStartTime = qaStartTime;
@@ -252,7 +252,7 @@ export class Scoreboard {
             let scoreboard = this.byRoom[roomId];
             if (!scoreboard) {
                 this.byRoom[roomId] = {
-                    qaStartTime: null,
+                    qaStartTime: undefined,
                     messages: [],
                 };
                 scoreboard = this.byRoom[roomId];

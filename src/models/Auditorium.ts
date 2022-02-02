@@ -40,15 +40,18 @@ export class Auditorium extends MatrixRoom implements PhysicalRoom {
     }
 
     public async getName(): Promise<string> {
-        return (await this.getDefinition()).name;
+        const auditoriuDefinition = await this.getDefinition();
+        return auditoriuDefinition.name;
     }
 
     public async getId(): Promise<string> {
-        return (await this.getDefinition()).id;
+        const auditoriuDefinition = await this.getDefinition();
+        return auditoriuDefinition.id;
     }
 
     public async getConferenceId(): Promise<string> {
-        return (await this.getDefinition()).conferenceId;
+        const auditoriuDefinition = await this.getDefinition();
+        return auditoriuDefinition.conferenceId;
     }
 }
 

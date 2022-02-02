@@ -353,7 +353,7 @@ export class Scheduler {
             case ScheduledTaskType.TalkEnd: {
                 await this.client.sendHtmlText(confTalk.roomId, `<h3>Your talk has ended - opening up this room to all attendees.</h3><p>@room - They won't see the history in this room.</p>`);
                 const widget = await LiveWidget.forTalk(confTalk, this.client);
-                const layout = await LiveWidget.layoutForTalk(widget, null);
+                const layout = await LiveWidget.layoutForTalk(widget);
                 const scoreboard = await LiveWidget.scoreboardForTalk(confTalk, this.client);
                 await this.client.sendStateEvent(confTalk.roomId, widget.type, widget.state_key, widget.content);
                 await this.client.sendStateEvent(confTalk.roomId, scoreboard.type, scoreboard.state_key, {});
@@ -371,7 +371,8 @@ export class Scheduler {
                     await this.client.sendHtmlText(confTalk.roomId, `<h3>Your talk starts in about 1 hour</h3><p>Please say something (anything) in this room to check in.</p>`);
 
                     const userIds = await this.conference.getInviteTargetsForTalk(confTalk);
-                    const resolved = (await resolveIdentifiers(userIds)).filter(p => p.mxid).map(p => p.mxid);
+                    const identifiers = await resolveIdentifiers(userIds);
+                    const resolved = identifiers.filter(p => p.mxid).map(p => p.mxid);
                     await config.RUNTIME.checkins.expectCheckinFrom(resolved);
                 }
 
@@ -446,7 +447,8 @@ export class Scheduler {
                     const pills: string[] = [];
                     for (const person of missing) {
                         if (person.mxid) {
-                            pills.push((await MentionPill.forUser(person.mxid, confTalk.roomId, this.client)).html);
+                            const pill = await MentionPill.forUser(person.mxid, confTalk.roomId, this.client);
+                            pills.push(pill.html);
                         } else {
                             pills.push(`<b>${person.person.name}</b>`);
                         }
@@ -455,7 +457,8 @@ export class Scheduler {
                     await this.client.sendHtmlText(confTalk.roomId, `<h3>Your talk starts in about 45 minutes</h3><p>${pills.join(', ')} - Please say something (anything) in this room to check in.</p>`);
 
                     const userIds = await this.conference.getInviteTargetsForTalk(confTalk);
-                    const resolved = (await resolveIdentifiers(userIds)).filter(p => p.mxid).map(p => p.mxid);
+                    const identifiers = await resolveIdentifiers(userIds);
+                    const resolved = identifiers.filter(p => p.mxid).map(p => p.mxid);
                     await config.RUNTIME.checkins.expectCheckinFrom(resolved);
                 }
 
@@ -484,7 +487,8 @@ export class Scheduler {
                     const pills: string[] = [];
                     for (const person of missing) {
                         if (person.mxid) {
-                            pills.push((await MentionPill.forUser(person.mxid, confTalk.roomId, this.client)).html);
+                            const pill = await MentionPill.forUser(person.mxid, confTalk.roomId, this.client);
+                            pills.push(pill.html);
                         } else {
                             pills.push(`<b>${person.person.name}</b>`);
                         }
@@ -493,7 +497,8 @@ export class Scheduler {
                     await this.client.sendHtmlText(confAudBackstage.roomId, `<h3>Required persons not checked in for upcoming talk</h3><p>Please track down the speakers for <b>${await confTalk.getName()}</b>.</p><p>Missing: ${pills.join(', ')}</p>`);
 
                     const userIds = await this.conference.getInviteTargetsForTalk(confTalk);
-                    const resolved = (await resolveIdentifiers(userIds)).filter(p => p.mxid).map(p => p.mxid);
+                    const identifiers = await resolveIdentifiers(userIds);
+                    const resolved = identifiers.filter(p => p.mxid).map(p => p.mxid);
                     await config.RUNTIME.checkins.expectCheckinFrom(resolved);
                 } // else no complaints
 
@@ -522,7 +527,8 @@ export class Scheduler {
                     const pills: string[] = [];
                     for (const person of missing) {
                         if (person.mxid) {
-                            pills.push((await MentionPill.forUser(person.mxid, confTalk.roomId, this.client)).html);
+                            const pill = await MentionPill.forUser(person.mxid, confTalk.roomId, this.client);
+                            pills.push(pill.html);
                         } else {
                             pills.push(`<b>${person.person.name}</b>`);
                         }
@@ -533,7 +539,8 @@ export class Scheduler {
                     await this.client.sendHtmlText(confAudBackstage.roomId, `<h3>Required persons not checked in for upcoming talk</h3><p>Please track down the speakers for <b>${await confTalk.getName()}</b>. The conference staff have been notified.</p><p>Missing: ${pills.join(', ')}</p>`);
 
                     const userIds = await this.conference.getInviteTargetsForTalk(confTalk);
-                    const resolved = (await resolveIdentifiers(userIds)).filter(p => p.mxid).map(p => p.mxid);
+                    const identifiers = await resolveIdentifiers(userIds);
+                    const resolved = identifiers.filter(p => p.mxid).map(p => p.mxid);
                     await config.RUNTIME.checkins.expectCheckinFrom(resolved);
                 } // else no complaints
 

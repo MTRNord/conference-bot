@@ -30,6 +30,10 @@ import * as htmlEscape from "escape-html";
 import * as crypto from "node:crypto";
 import config from "./config";
 
+const escapeRegex = (v: string): string => {
+    return v.replace(/[$()*+./?[\\\]^{|}-]/g, '\\$&');
+};
+
 export async function replaceRoomIdsWithPills(client: MatrixClient, text: string, roomIds: string[] | string, msgtype: MessageType = "m.text"): Promise<TextualMessageEventContent> {
     if (!Array.isArray(roomIds)) roomIds = [roomIds];
 
@@ -40,10 +44,6 @@ export async function replaceRoomIdsWithPills(client: MatrixClient, text: string
         format: "org.matrix.custom.html",
     };
 
-    const escapeRegex = (v: string): string => {
-        return v.replace(/[$()*+./?[\\\]^{|}-]/g, '\\$&');
-    };
-
     const viaServers = [(new UserID(await client.getUserId())).domain];
     for (const roomId of roomIds) {
         let alias = roomId;
@@ -51,7 +51,7 @@ export async function replaceRoomIdsWithPills(client: MatrixClient, text: string
             alias = (await client.getPublishedAlias(roomId)) || roomId;
         } catch (error) {
             // This is a recursive call, so tell the function not to try and call us
-            await logMessage(LogLevel.WARN, "utils", `Failed to resolve room alias for ${roomId} - see console for details`, null, true);
+            await logMessage(LogLevel.WARN, "utils", `Failed to resolve room alias for ${roomId} - see console for details`, undefined, true);
             LogService.warn("utils", error);
         }
         const regexRoomId = new RegExp(escapeRegex(roomId), "g");
@@ -116,13 +116,13 @@ export interface IEncrypted {
     content: string;
 }
 
-export async function asyncFind<T>(a: T[], fn: (i: T) => Promise<boolean>): Promise<T> {
+export async function asyncFind<T>(a: T[], fn: (i: T) => Promise<boolean>): Promise<T | undefined> {
     for (const i of a) {
         if (await fn(i)) {
             return i;
         }
     }
-    return null;
+    return undefined;
 }
 
 export async function asyncFilter<T>(a: T[], fn: (i: T) => Promise<boolean>): Promise<T[]> {
@@ -136,9 +136,9 @@ export async function asyncFilter<T>(a: T[], fn: (i: T) => Promise<boolean>): Pr
 }
 
 export async function makeRoomPublic(roomId: string, client: MatrixClient) {
-    await client.sendStateEvent(roomId, "m.room.guest_access", "", {guest_access: "can_join"});
-    await client.sendStateEvent(roomId, "m.room.history_visibility", "", {history_visibility: "world_readable"});
-    await client.sendStateEvent(roomId, "m.room.join_rules", "", {join_rule: "public"});
+    await client.sendStateEvent(roomId, "m.room.guest_access", "", { guest_access: "can_join" });
+    await client.sendStateEvent(roomId, "m.room.history_visibility", "", { history_visibility: "world_readable" });
+    await client.sendStateEvent(roomId, "m.room.join_rules", "", { join_rule: "public" });
 }
 
 /**
@@ -177,7 +177,7 @@ export function isEmojiVariant(expected: string, value: string): boolean {
  * @returns The string, with any applicable suffixes applied.
  */
 export function applySuffixRules(
-    str: string, identifier: string, suffixRules: {[prefix: string]: string}
+    str: string, identifier: string, suffixRules: { [prefix: string]: string; }
 ): string {
     for (const [prefix, suffix] of Object.entries(suffixRules)) {
         if (identifier.startsWith(prefix)) {

@@ -20,9 +20,9 @@ import { getAttr } from "./common";
 
 const videoUrl = getAttr('org.matrix.confbot.video_url');
 
-export const videoEl = document.getElementById("livestream") as HTMLVideoElement;
-export const muteButton = document.getElementById('muteButton');
-export const controlsEl = document.getElementById("controlBar");
+export const videoEl = document.querySelector("#livestream") as HTMLVideoElement;
+export const muteButton = document.querySelector('#muteButton');
+export const controlsEl = document.querySelector("#controlBar");
 
 if (isWidget) {
     videoEl.classList.add('widget');
@@ -41,7 +41,7 @@ export function pause() {
     videoEl.pause();
 }
 
-export function play(readyFn: (isReady: boolean) => void = null) {
+export function play(readyFn: (isReady: boolean) => void) {
     isVideoMode = true;
     if (hls) hls.destroy();
     makeLivestream(readyFn || lastReadyFn);
@@ -79,7 +79,7 @@ export function makeLivestream(readyFn: (isReady: boolean) => void) {
             progressive: true,
         });
         hls.on(Hls.Events.ERROR, (e, data) => {
-            console.error("HLS error: ", e, data);
+            console.error("HLS error:", e, data);
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
                 onNetworkError();
             }
@@ -105,7 +105,7 @@ export function makeLivestream(readyFn: (isReady: boolean) => void) {
     loadHlsMedia(videoUrl);
 }
 
-muteButton.addEventListener('click', () => {
+muteButton?.addEventListener('click', () => {
     videoEl.muted = !videoEl.muted;
 });
 

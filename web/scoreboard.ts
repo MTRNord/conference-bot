@@ -19,7 +19,7 @@ import { MatrixCapabilities, WidgetApi } from "matrix-widget-api";
 import { widgetId } from "./widgets";
 import { formatDuration, getAttr } from "./common";
 
-const upvoteEl = document.getElementById("upvoted");
+const upvoteEl = document.querySelector("#upvoted");
 
 interface Scoreboard {
     qaStartTime: number | null;
@@ -35,7 +35,7 @@ interface RoomMessage {
     senderAvatarHttpUrl?: string;
 }
 
-let widgetApi: WidgetApi = null;
+let widgetApi: WidgetApi | undefined;
 
 // Start widget API as early as possible
 if (widgetId) {
@@ -60,34 +60,34 @@ function innerText(tag: string, clazz: string, text: string): [string, string[]]
     ];
 }
 
-let bannerUpdateTimer: number | null = null;
+let bannerUpdateTimer: number | undefined;
 
 function render(scoreboard: Scoreboard) {
     // Update countdown banner
-    if (bannerUpdateTimer !== null) {
+    if (bannerUpdateTimer) {
         clearInterval(bannerUpdateTimer);
-        bannerUpdateTimer = null;
+        bannerUpdateTimer = undefined;
     }
-    if (scoreboard.qaStartTime !== null) {
+    if (scoreboard.qaStartTime) {
         // Show the countdown banner
         function renderBannerText(qaStartTime: number) {
             const timeUntilStart = qaStartTime - Date.now();
-            const banner = document.getElementById('scoreboardQABanner');
+            const banner = document.querySelector('#scoreboardQABanner');
             if (timeUntilStart < 0) {
-                banner.innerText = "Q&A has started";
+                banner?.textContent = "Q&A has started";
             } else {
                 const text = `Q&A starts in ${formatDuration(timeUntilStart)}`;
-                if (banner.innerText !== text) {
-                    banner.innerText = text;
+                if (banner?.textContent !== text) {
+                    banner.textContent = text;
                 }
             }
         }
         bannerUpdateTimer = window.setInterval(renderBannerText, 100, scoreboard.qaStartTime);
         renderBannerText(scoreboard.qaStartTime);
-        document.getElementById('scoreboardQABanner').style.display = 'block';
+        document.querySelector('#scoreboardQABanner').style.display = 'block';
     } else {
         // Hide the countdown banner
-        document.getElementById('scoreboardQABanner').style.display = 'none';
+        document.querySelector('#scoreboardQABanner').style.display = 'none';
     }
 
     let html = "";
@@ -108,7 +108,7 @@ function render(scoreboard: Scoreboard) {
         html += val;
         innerTexts.push(t);
 
-        html += "</div>"
+        html += "</div>";
 
         /** MESSAGE **/
         html += "<div class='body'>";
@@ -118,13 +118,13 @@ function render(scoreboard: Scoreboard) {
         html += val;
         innerTexts.push(t);
 
-        html += "</div>"
+        html += "</div>";
 
-        html += "</div>"
+        html += "</div>";
     }
     upvoteEl.innerHTML = html;
     for (const innerText of innerTexts) {
-        document.getElementById(innerText[0]).innerText = innerText[1];
+        document.querySelector(`#${innerText[0]}`).textContent = innerText[1];
     }
 }
 
@@ -132,7 +132,7 @@ function doFetch() {
     fetch(`/scoreboard/${encodeURIComponent(forRoomId)}`).then(r => r.json()).then(r => {
         render(r);
         setTimeout(doFetch, 3000);
-    }).catch(() => setTimeout(doFetch, 15000));
+    }).catch(() => setTimeout(doFetch, 15_000));
 }
 
 function intercept(ev) {

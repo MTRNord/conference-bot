@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import {KJUR} from 'jsrsasign';
+import { KJUR } from 'jsrsasign';
 import {
     IOpenIDCredentials,
 } from "matrix-widget-api";
@@ -32,7 +32,7 @@ let meetApi: any; // JitsiMeetExternalAPI
  */
 function createJWTToken(jitsiDomain, roomId, avatarUrl, displayName, openIdToken) {
     // Header
-    const header = {alg: 'HS256', typ: 'JWT'};
+    const header = { alg: 'HS256', typ: 'JWT' };
     // Payload
     const payload = {
         // As per Jitsi token auth, `iss` needs to be set to something agreed between
@@ -84,7 +84,7 @@ export async function joinConference(opts, widgetApi, onCallback) {
             if (!openIdToken?.access_token) { // eslint-disable-line camelcase
                 // We've failed to get a token, don't try to init conference
                 console.warn('Expected to have an OpenID credential, cannot initialize widget.');
-                document.getElementById("widgetActionContainer").innerText = "Failed to load Jitsi widget";
+                document.querySelector("#widgetActionContainer")?.textContent = "Failed to load Jitsi widget";
                 return;
             }
             jwt = createJWTToken(jitsiDomain, roomId, avatarUrl, displayName, openIdToken);
@@ -119,12 +119,12 @@ export async function joinConference(opts, widgetApi, onCallback) {
         if (title) meetApi.executeCommand("subject", title);
 
         meetApi.on("readyToClose", () => {
-            document.getElementById("jitsiContainer").innerHTML = "";
-            meetApi = null;
+            document.querySelector("#jitsiContainer").innerHTML = "";
+            meetApi = undefined;
             onCallback();
         });
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         onCallback();
     }
 }

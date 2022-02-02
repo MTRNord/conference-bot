@@ -58,7 +58,8 @@ export class InviteCommand implements ICommand {
         } else if (args[0] && args[0] === "coordinators-support") {
             const people: IDbPerson[] = [];
             for (const aud of conference.storedAuditoriums) {
-                if (!(await aud.getId()).startsWith("D.")) {
+                const auditoriumId = await aud.getId();
+                if (!(auditoriumId).startsWith("D.")) {
                     // HACK: Only invite coordinators for D.* auditoriums.
                     // TODO: Make invitations for support rooms more configurable.
                     //       https://github.com/matrix-org/conference-bot/issues/76

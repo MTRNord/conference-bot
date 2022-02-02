@@ -57,11 +57,11 @@ import { CheckInMap } from "./CheckInMap";
 import { FDMCommand } from "./commands/FDMCommand";
 
 config.RUNTIME = {
-    client: null,
-    conference: null,
-    scheduler: null,
-    ircBridge: null,
-    checkins: null,
+    client: undefined,
+    conference: undefined,
+    scheduler: undefined,
+    ircBridge: undefined,
+    checkins: undefined,
 };
 
 process.on('SIGINT', () => {
@@ -219,7 +219,7 @@ function setupWebserver() {
         root: tmplPath,
         cache: process.env.NODE_ENV === 'production',
     });
-    app.use(express.urlencoded({extended: true}));
+    app.use(express.urlencoded({ extended: true }));
     app.use('/assets', express.static(config.webserver.additionalAssetsPath));
     app.use('/bundles', express.static(path.join(tmplPath, 'bundles')));
     app.engine('liquid', engine.express());

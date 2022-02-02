@@ -94,7 +94,8 @@ export class Conference {
                     if (verifiableCreateEvent?.['sender'] === (await this.client.getUserId())) {
                         if (verifiable3pidInvite?.['sender'] === (await this.client.getUserId())) {
                             // Alright, we know it's us who sent it. Now let's check the database.
-                            const people = await (await this.getBackendDb()).findPeopleWithId(emailInvite[RS_3PID_PERSON_ID]);
+                            const db = await this.getBackendDb();
+                            const people = await db.findPeopleWithId(emailInvite[RS_3PID_PERSON_ID]);
                             if (people?.length) {
                                 // Finally, associate the users.
                                 for (const person of people) {
@@ -158,7 +159,7 @@ export class Conference {
     }
 
     private reset() {
-        this.dbRoom = null;
+        this.dbRoom = undefined;
         this.subspaces = {};
         this.auditoriums = {};
         this.auditoriumBackstages = {};
@@ -224,7 +225,8 @@ export class Conference {
 
         // Locate other metadata in the room
         if (!this.dbRoom) return;
-        const dbState = (await this.client.getRoomState(this.dbRoom.roomId)).filter(s => !!s.content);
+        const roomState = await this.client.getRoomState(this.dbRoom.roomId);
+        const dbState = roomState.filter(s => !!s.content);
 
         const people = dbState.filter(s => s.type === RS_STORED_PERSON).map(s => s.content as IStoredPerson);
         for (const person of people) {
@@ -308,7 +310,8 @@ export class Conference {
                         invite: [config.moderatorUserId],
                     }),
                 );
-                (await this.getSpace()).addChildRoom(roomId);
+                const space = await this.getSpace();
+                space.addChildRoom(roomId);
             }
         }
     }
@@ -340,7 +343,8 @@ export class Conference {
         }
 
         // Ensure that the subspace appears within the conference space.
-        await (await this.getSpace()).addChildSpace(subspace);
+        const space = await this.getSpace();
+        await space.addChildSpace(subspace);
 
         // Ensure that the subspace can be viewed by guest users.
         await this.client.sendStateEvent(
@@ -515,7 +519,8 @@ export class Conference {
         // Ensure that the room appears within the correct space.
         await auditorium.addDirectChild(roomId);
         const startTime = new Date(talk.startTime).toISOString();
-        await (await auditorium.getSpace()).addChildRoom(roomId, { order: `3-talk-${startTime}` });
+        const space = await auditorium.getSpace();
+        await space.addChildRoom(roomId, { order: `3-talk-${startTime}` });
 
         return this.talks[talk.id];
     }
