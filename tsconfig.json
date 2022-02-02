@@ -5,13 +5,13 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "target": "es2015",
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "sourceMap": true,
     "outDir": "./lib",
     "types": [
       "node"
     ],
-    "strict": true
+    "strict": false
   },
   "include": [
     "./src/**/*"
