@@ -19,6 +19,7 @@ import { IAuditorium, IConference, IInterestRoom, IPerson, ITalk } from "../mode
 import * as moment from "moment";
 import { RoomKind } from "../models/room_kinds";
 import config from "../config";
+import { ConferenceParser } from './AParser';
 
 export interface IPentabarfEvent {
     attr: {
@@ -87,28 +88,28 @@ function arrayLike<T>(val: T | T[]): T[] {
     return [val];
 }
 
-function simpleTimeParse(str: string): { hours: number, minutes: number } {
+function simpleTimeParse(str: string): { hours: number, minutes: number; } {
     const parts = str.split(':');
-    return {hours: Number(parts[0]), minutes: Number(parts[1])};
+    return { hours: Number(parts[0]), minutes: Number(parts[1]) };
 }
 
-export function deprefix(id: string): {kind: RoomKind, name: string} {
+export function deprefix(id: string): { kind: RoomKind, name: string; } {
     const override = config.conference.prefixes.nameOverrides[id];
 
     const auditoriumPrefix = config.conference.prefixes.auditoriumRooms.find(p => id.startsWith(p));
     if (auditoriumPrefix) {
-        return {kind: RoomKind.Auditorium, name: override || id.slice(auditoriumPrefix.length)};
+        return { kind: RoomKind.Auditorium, name: override || id.slice(auditoriumPrefix.length) };
     }
 
     const interestPrefix = config.conference.prefixes.interestRooms.find(p => id.startsWith(p));
     if (interestPrefix) {
-        return {kind: RoomKind.SpecialInterest, name: override || id.slice(interestPrefix.length)};
+        return { kind: RoomKind.SpecialInterest, name: override || id.slice(interestPrefix.length) };
     }
 
-    return {kind: RoomKind.SpecialInterest, name: override || id};
+    return { kind: RoomKind.SpecialInterest, name: override || id };
 }
 
-export class PentabarfParser {
+export class PentabarfParser extends ConferenceParser {
     public readonly parsed: IPentabarfSchedule;
 
     public readonly conference: IConference;
@@ -118,6 +119,7 @@ export class PentabarfParser {
     public readonly interestRooms: IInterestRoom[];
 
     constructor(rawXml: string) {
+        super();
         this.parsed = parser.parse(rawXml, {
             attrNodeName: "attr",
             textNodeName: "#text",

@@ -50,16 +50,15 @@ import { Auditorium, AuditoriumBackstage } from "./models/Auditorium";
 import { Talk } from "./models/Talk";
 import { ResolvedPersonIdentifier, resolveIdentifiers } from "./invites";
 import { IDbPerson, Role } from "./db/DbPerson";
-import { PentaDb } from "./db/PentaDb";
 import { PermissionsCommand } from "./commands/PermissionsCommand";
 import { InterestRoom } from "./models/InterestRoom";
 import { IStateEvent } from "./models/room_state";
 import { IDbTalk } from "./db/DbTalk";
-import { DBBackend } from "./db/backendDb";
+import { DBBackend, getBackendDB } from "./db/backendDb";
 
 export class Conference {
     private dbRoom: MatrixRoom;
-    private backendDb = new PentaDb();
+    private backendDb = getBackendDB();
     private subspaces: {
         [subspaceId: string]: Space;
     } = {};

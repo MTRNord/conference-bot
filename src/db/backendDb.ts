@@ -1,5 +1,6 @@
 import { IDbPerson } from "./DbPerson";
 import { IDbTalk } from "./DbTalk";
+import { PentaDb } from "./PentaDb";
 
 export abstract class DBBackend {
     public abstract getSystemName(): string;
@@ -17,3 +18,7 @@ export abstract class DBBackend {
      */
     public abstract getTalk(talkId: string): Promise<IDbTalk | undefined>;
 }
+
+export const getBackendDB = (): DBBackend => {
+    return new PentaDb();
+};

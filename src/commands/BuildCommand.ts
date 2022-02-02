@@ -17,13 +17,13 @@ limitations under the License.
 import { ICommand } from "./ICommand";
 import { LogLevel, MatrixClient, MentionPill, RichReply } from "matrix-bot-sdk";
 import * as fetch from "node-fetch";
-import { PentabarfParser } from "../parsers/PentabarfParser";
 import { Auditorium } from "../models/Auditorium";
 import { ITalk } from "../models/schedule";
 import config from "../config";
 import { Conference } from "../Conference";
 import { logMessage } from "../LogProxy";
 import { editNotice } from "../utils";
+import { getConferenceParser } from "../parsers/AParser";
 
 export class BuildCommand implements ICommand {
     public readonly prefixes = ["build", "b"];
@@ -34,7 +34,7 @@ export class BuildCommand implements ICommand {
         await client.sendReadReceipt(roomId, event['event_id']);
 
         const xml = await fetch(config.conference.pentabarfDefinition).then(r => r.text());
-        const parsed = new PentabarfParser(xml);
+        const parsed = getConferenceParser(xml);
 
         if (!conference.isCreated) {
             await conference.createDb(parsed.conference);
