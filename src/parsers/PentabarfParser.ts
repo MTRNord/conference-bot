@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import * as parser from 'fast-xml-parser';
 import { IAuditorium, IConference, IInterestRoom, IPerson, ITalk } from "../models/schedule";
 import * as moment from "moment";
 import { RoomKind } from "../models/room_kinds";
 import config, { AvailableBackends } from "../config";
 import { ConferenceParser } from './AParser';
+import { XMLParser } from "fast-xml-parser";
 
 export interface IPentabarfEvent {
     attr: {
@@ -120,11 +120,12 @@ export class PentabarfParser extends ConferenceParser {
 
     constructor(rawXml: string) {
         super();
-        this.parsed = parser.parse(rawXml, {
-            attrNodeName: "attr",
+        const parser = new XMLParser({
+            attributesGroupName: "attr",
             textNodeName: "#text",
             ignoreAttributes: false,
         });
+        this.parsed = parser.parse(rawXml);
 
         this.auditoriums = [];
         this.talks = [];
