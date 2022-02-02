@@ -30,7 +30,7 @@ export class FDMCommand implements ICommand {
         const vol = await client.resolveRoom("#volunteers:fosdem.org");
         const volBackstage = await client.resolveRoom("#volunteers-backstage:fosdem.org");
 
-        const db = await conference.getPentaDb();
+        const db = await conference.getBackendDb();
 
         let volunteers = await db.findAllPeopleWithRemark("volunteer");
         const dedupe: IDbPerson[] = [];

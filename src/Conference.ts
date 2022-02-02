@@ -55,12 +55,13 @@ import { PermissionsCommand } from "./commands/PermissionsCommand";
 import { InterestRoom } from "./models/InterestRoom";
 import { IStateEvent } from "./models/room_state";
 import { IDbTalk } from "./db/DbTalk";
+import { DBBackend } from "./db/backendDb";
 
 export class Conference {
     private dbRoom: MatrixRoom;
-    private pentaDb = new PentaDb();
+    private backendDb = new PentaDb();
     private subspaces: {
-        [subspaceId: string]: Space
+        [subspaceId: string]: Space;
     } = {};
     private auditoriums: {
         [auditoriumId: string]: Auditorium;
@@ -93,7 +94,7 @@ export class Conference {
                     if (verifiableCreateEvent?.['sender'] === (await this.client.getUserId())) {
                         if (verifiable3pidInvite?.['sender'] === (await this.client.getUserId())) {
                             // Alright, we know it's us who sent it. Now let's check the database.
-                            const people = await (await this.getPentaDb()).findPeopleWithId(emailInvite[RS_3PID_PERSON_ID]);
+                            const people = await (await this.getBackendDb()).findPeopleWithId(emailInvite[RS_3PID_PERSON_ID]);
                             if (people?.length) {
                                 // Finally, associate the users.
                                 for (const person of people) {
@@ -274,13 +275,12 @@ export class Conference {
             space.roomId,
             "m.room.guest_access",
             "",
-            {guest_access:"can_join"},
+            { guest_access: "can_join" },
         );
     }
 
-    public async getPentaDb(): Promise<PentaDb> {
-        await this.pentaDb.connect();
-        return this.pentaDb;
+    public async getBackendDb(): Promise<DBBackend> {
+        return this.backendDb;
     }
 
     public async getSpace(): Promise<Space> {
@@ -347,7 +347,7 @@ export class Conference {
             subspace.roomId,
             "m.room.guest_access",
             "",
-            {guest_access:"can_join"},
+            { guest_access: "can_join" },
         );
 
         return subspace;
@@ -505,7 +505,7 @@ export class Conference {
             roomId = this.talks[talk.id].roomId;
 
             // Ensure that the room has the correct name.
-            await this.client.sendStateEvent(roomId, "m.room.name", "", {name: talk.title});
+            await this.client.sendStateEvent(roomId, "m.room.name", "", { name: talk.title });
         }
 
         // TODO: Send widgets after creation
@@ -558,17 +558,17 @@ export class Conference {
     }
 
     public async getPeopleForAuditorium(auditorium: Auditorium): Promise<IDbPerson[]> {
-        const db = await this.getPentaDb();
+        const db = await this.getBackendDb();
         return await this.resolvePeople(await db.findAllPeopleForAuditorium(await auditorium.getId()));
     }
 
     public async getPeopleForTalk(talk: Talk): Promise<IDbPerson[]> {
-        const db = await this.getPentaDb();
+        const db = await this.getBackendDb();
         return await this.resolvePeople(await db.findAllPeopleForTalk(await talk.getId()));
     }
 
     public async getPeopleForInterest(int: InterestRoom): Promise<IDbPerson[]> {
-        const db = await this.getPentaDb();
+        const db = await this.getBackendDb();
         // Yes, an interest room is an auditorium to Penta.
         return await this.resolvePeople(await db.findAllPeopleForAuditorium(await int.getId()));
     }
@@ -611,7 +611,7 @@ export class Conference {
 
     private async resolvePeople(people: IDbPerson[]): Promise<IDbPerson[]> {
         // Clone people from the DB to avoid accidentally mutating caches
-        people = people.map(p => objectFastClone(p))
+        people = people.map(p => objectFastClone(p));
 
         // Fill in any details we have that the database doesn't
         for (const person of people) {
@@ -642,10 +642,10 @@ export class Conference {
     /**
      * Gets the Pentabarf database record for a talk.
      * @param talkId The talk ID.
-     * @returns The database record for the talk, if it exists; `null` otherwise.
+     * @returns The database record for the talk, if it exists; `undefined` otherwise.
      */
-    public async getDbTalk(talkId: string): Promise<IDbTalk | null> {
-        return this.pentaDb.getTalk(talkId);
+    public async getDbTalk(talkId: string): Promise<IDbTalk | undefined> {
+        return this.backendDb.getTalk(talkId);
     }
 
     public getInterestRoom(intId: string): InterestRoom {
