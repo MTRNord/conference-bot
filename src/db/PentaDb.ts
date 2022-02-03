@@ -22,13 +22,13 @@ import { objectFastClone } from "../utils";
 import { IDbTalk, IRawDbTalk } from "./DbTalk";
 import { DBBackend } from "./backendDb";
 
-const PEOPLE_SELECT = "SELECT event_id::text, person_id::text, event_role::text, name::text, email::text, matrix_id::text, conference_room::text, remark::text FROM " + config.conference.database.pentabarfTables.tblPeople;
-const NONEVENT_PEOPLE_SELECT = "SELECT DISTINCT 'ignore' AS event_id, person_id::text, event_role::text, name::text, email::text, matrix_id::text, conference_room::text FROM " + config.conference.database.pentabarfTables.tblPeople;
+const PEOPLE_SELECT = "SELECT event_id::text, person_id::text, event_role::text, name::text, email::text, matrix_id::text, conference_room::text, remark::text FROM " + config.conference.backend.pentabarf.database.tblPeople;
+const NONEVENT_PEOPLE_SELECT = "SELECT DISTINCT 'ignore' AS event_id, person_id::text, event_role::text, name::text, email::text, matrix_id::text, conference_room::text FROM " + config.conference.backend.pentabarf.database.tblPeople;
 
 const START_QUERY = "start_datetime AT TIME ZONE $1 AT TIME ZONE 'UTC'";
 const QA_START_QUERY = "(start_datetime + presentation_length) AT TIME ZONE $1 AT TIME ZONE 'UTC'";
 const END_QUERY = "(start_datetime + duration) AT TIME ZONE $1 AT TIME ZONE 'UTC'";
-const SCHEDULE_SELECT = `SELECT DISTINCT event_id::text, conference_room::text, EXTRACT(EPOCH FROM ${START_QUERY}) * 1000 AS start_datetime, EXTRACT(EPOCH FROM duration) AS duration_seconds, EXTRACT(EPOCH FROM presentation_length) AS presentation_length_seconds, EXTRACT(EPOCH FROM ${END_QUERY}) * 1000 AS end_datetime, EXTRACT(EPOCH FROM ${QA_START_QUERY}) * 1000 AS qa_start_datetime, prerecorded FROM ` + config.conference.database.pentabarfTables.tblSchedule;
+const SCHEDULE_SELECT = `SELECT DISTINCT event_id::text, conference_room::text, EXTRACT(EPOCH FROM ${START_QUERY}) * 1000 AS start_datetime, EXTRACT(EPOCH FROM duration) AS duration_seconds, EXTRACT(EPOCH FROM presentation_length) AS presentation_length_seconds, EXTRACT(EPOCH FROM ${END_QUERY}) * 1000 AS end_datetime, EXTRACT(EPOCH FROM ${QA_START_QUERY}) * 1000 AS qa_start_datetime, prerecorded FROM ` + config.conference.backend.pentabarf.database.tblSchedule;
 
 export class PentaDb implements DBBackend {
     private client: Pool;
@@ -36,15 +36,15 @@ export class PentaDb implements DBBackend {
 
     constructor() {
         this.client = new Pool({
-            host: config.conference.database.host,
-            port: config.conference.database.port,
-            user: config.conference.database.username,
-            password: config.conference.database.password,
-            database: config.conference.database.database,
+            host: config.conference.backend.pentabarf.database.host,
+            port: config.conference.backend.pentabarf.database.port,
+            user: config.conference.backend.pentabarf.database.username,
+            password: config.conference.backend.pentabarf.database.password,
+            database: config.conference.backend.pentabarf.database.database,
 
             // sslmode parsing is largely interpreted from pg-connection-string handling
-            ssl: config.conference.database.sslmode === 'disable' ? false : {
-                rejectUnauthorized: config.conference.database.sslmode === 'no-verify',
+            ssl: config.conference.backend.pentabarf.database.sslmode === 'disable' ? false : {
+                rejectUnauthorized: config.conference.backend.pentabarf.database.sslmode === 'no-verify',
             },
         });
         this.connect();
@@ -119,7 +119,7 @@ export class PentaDb implements DBBackend {
     }
 
     private postprocessDbTalk(talk: IRawDbTalk): IDbTalk {
-        const qaStartDatetime = talk.qa_start_datetime + config.conference.database.schedulePreBufferSeconds * 1000;
+        const qaStartDatetime = talk.qa_start_datetime + config.conference.backend.pentabarf.database.schedulePreBufferSeconds * 1000;
         let livestreamStartDatetime: number;
         if (talk.prerecorded) {
             // For prerecorded talks, a preroll is shown, followed by the talk recording, then an
@@ -127,9 +127,9 @@ export class PentaDb implements DBBackend {
             livestreamStartDatetime = qaStartDatetime;
         } else {
             // For live talks, both the preroll and interroll are shown, followed by the live talk.
-            livestreamStartDatetime = talk.start_datetime + config.conference.database.schedulePreBufferSeconds * 1000;
+            livestreamStartDatetime = talk.start_datetime + config.conference.backend.pentabarf.database.schedulePreBufferSeconds * 1000;
         }
-        const livestreamEndDatetime = talk.end_datetime - config.conference.database.schedulePostBufferSeconds * 1000;
+        const livestreamEndDatetime = talk.end_datetime - config.conference.backend.pentabarf.database.schedulePostBufferSeconds * 1000;
 
         return {
             ...talk,

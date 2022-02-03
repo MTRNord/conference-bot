@@ -12,7 +12,7 @@ export abstract class ConferenceParser {
 }
 
 export const getConferenceParser = (input: string): ConferenceParser => {
-    switch (config.conference.backendType) {
+    switch (config.conference.backend.type) {
         case "pentabarf": {
             return new PentabarfParser(input);
         }

@@ -34,10 +34,10 @@ export class BuildCommand implements ICommand {
         await client.sendReadReceipt(roomId, event['event_id']);
 
         let inputData;
-        switch (config.conference.backendType) {
+        switch (config.conference.backend.type) {
             case "pentabarf": {
-                if (config.conference.pentabarfDefinition) {
-                    inputData = await fetch(config.conference.pentabarfDefinition).then(r => r.text());
+                if (config.conference.backend.pentabarf) {
+                    inputData = await fetch(config.conference.backend.pentabarf.definition).then(r => r.text());
                     break;
                 } else {
                     const message = "Your bot is not set up correctly. Please check your config!";

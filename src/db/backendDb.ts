@@ -22,7 +22,7 @@ export abstract class DBBackend {
 }
 
 export const getBackendDB = (): DBBackend => {
-    switch (config.conference.backendType) {
+    switch (config.conference.backend.type) {
         case "pentabarf": {
             return new PentaDb();
         }
