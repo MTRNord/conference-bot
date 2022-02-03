@@ -15,11 +15,11 @@ limitations under the License.
 */
 
 import { IAuditorium, IConference, IInterestRoom, IPerson, ITalk } from "../models/schedule";
-import * as moment from "moment";
 import { RoomKind } from "../models/room_kinds";
 import config, { AvailableBackends } from "../config";
 import { ConferenceParser } from './AParser';
 import { XMLParser } from "fast-xml-parser";
+import { DateTime } from "luxon";
 
 export interface IPentabarfEvent {
     attr: {
@@ -140,7 +140,7 @@ export class PentabarfParser extends ConferenceParser {
         for (const day of arrayLike(this.parsed.schedule?.day)) {
             if (!day) continue;
 
-            const dateTs = moment.utc(day.attr?.["@_date"], "YYYY-MM-DD").valueOf();
+            const dateTs = DateTime.fromISO(day.attr?.["@_date"]).toMillis();
             for (const pRoom of arrayLike(day.room)) {
                 if (!pRoom) continue;
 
@@ -176,13 +176,13 @@ export class PentabarfParser extends ConferenceParser {
 
                     const parsedStartTime = simpleTimeParse(pEvent.start);
                     const parsedDuration = simpleTimeParse(pEvent.duration);
-                    const startTime = moment(dateTs).add(parsedStartTime.hours, 'hours').add(parsedStartTime.minutes, 'minutes');
-                    const endTime = moment(startTime).add(parsedDuration.hours, 'hours').add(parsedDuration.minutes, 'minutes');
+                    const startTime = DateTime.fromMillis(dateTs).plus({ hours: parsedStartTime.hours, minutes: parsedStartTime.minutes });
+                    const endTime = startTime.plus({ hours: parsedDuration.hours, minutes: parsedDuration.minutes });
                     let talk: ITalk = {
                         id: pEvent.attr?.["@_id"],
                         dateTs: dateTs,
-                        startTime: startTime.valueOf(),
-                        endTime: endTime.valueOf(),
+                        startTime: startTime.toMillis(),
+                        endTime: endTime.toMillis(),
                         slug: pEvent.slug,
                         title: pEvent.title,
                         subtitle: pEvent.subtitle,

@@ -19,7 +19,7 @@ import { MatrixClient } from "matrix-bot-sdk";
 import { Conference } from "../Conference";
 import config from "../config";
 import { getStartTime, sortTasks } from "../Scheduler";
-import moment = require("moment");
+import { DateTime } from "luxon";
 
 export class ScheduleCommand implements ICommand {
     public readonly prefixes = ["schedule"];
@@ -38,9 +38,9 @@ export class ScheduleCommand implements ICommand {
                 for (const task of upcoming) {
                     const talkRoom = conference.getTalk(task.talk.event_id);
                     if (!talkRoom) continue;
-                    const taskStart = moment(getStartTime(task));
-                    const formattedTimestamp = taskStart.format("YYYY-MM-DD HH:mm:ss [UTC]ZZ");
-                    html += `<li>${formattedTimestamp}: <b>${task.type} on ${await talkRoom.getName()}</b> (<code>${task.id}</code>) ${taskStart.fromNow()}</li>`;
+                    const taskStart = DateTime.fromMillis(getStartTime(task));
+                    const formattedTimestamp = taskStart.toFormat("yyyy-LL-dd HH:mm:ss [UTC]ZZ");
+                    html += `<li>${formattedTimestamp}: <b>${task.type} on ${await talkRoom.getName()}</b> (<code>${task.id}</code>) ${taskStart.toRelative()}</li>`;
                 }
                 html += "</ul>";
                 await client.sendHtmlNotice(roomId, html);
