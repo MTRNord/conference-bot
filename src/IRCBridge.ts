@@ -15,10 +15,10 @@ limitations under the License.
 */
 
 import { MatrixClient, MatrixEvent } from "matrix-bot-sdk";
-import * as irc from "irc-upd";
 import { Auditorium } from "./models/Auditorium";
 import { InterestRoom } from "./models/InterestRoom";
 import { makeLocalpart } from "./utils/aliases";
+import { Client } from "matrix-org-irc";
 
 export interface IRCBridgeOpts {
     botNick: string;
@@ -43,7 +43,7 @@ const COMMAND_TIMEOUT_MS = 60_000;
 export class IRCBridge {
 
     private botRoomId?: string;
-    private ircClient: any;
+    private ircClient: Client;
     constructor(private readonly config: IRCBridgeOpts, private readonly mxClient: MatrixClient) {
         if (!config.botNick || !config.botUserId || !config.channelPrefix || !config.port || !config.serverName) {
             throw new Error('Missing configuration options for IRC bridge');
@@ -86,7 +86,7 @@ export class IRCBridge {
         // This should timeout if the connection is broken
         await this.executeCommand("bridgeversion");
 
-        this.ircClient = new irc.Client(this.config.serverName, this.config.botNick, {
+        this.ircClient = new Client(this.config.serverName, this.config.botNick, {
             port: this.config.port,
             password: this.config.botPassword,
             sasl: this.config.sasl || false,
