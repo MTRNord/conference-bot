@@ -16,7 +16,7 @@ limitations under the License.
 
 import { ICommand } from "./ICommand";
 import { LogLevel, MatrixClient, MentionPill, RichReply } from "matrix-bot-sdk";
-import * as fetch from "node-fetch";
+import fetch from "node-fetch";
 import { Auditorium } from "../models/Auditorium";
 import { ITalk } from "../models/schedule";
 import config from "../config";
