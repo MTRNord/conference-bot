@@ -17,7 +17,7 @@ limitations under the License.
 import { IAuditorium, IConference, IInterestRoom, IPerson, ITalk } from "../models/schedule";
 import { RoomKind } from "../models/room_kinds";
 import config, { AvailableBackends } from "../config";
-import { ConferenceParser } from './AParser';
+import { ConferenceParser } from './ConferenceParser';
 import { XMLParser } from "fast-xml-parser";
 import { DateTime } from "luxon";
 

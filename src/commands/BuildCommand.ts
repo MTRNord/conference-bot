@@ -23,7 +23,7 @@ import config from "../config";
 import { Conference } from "../Conference";
 import { logMessage } from "../LogProxy";
 import { editNotice } from "../utils";
-import { getConferenceParser } from "../parsers/AParser";
+import { getConferenceParser } from "../parsers/ConferenceParser";
 
 export class BuildCommand implements ICommand {
     public readonly prefixes = ["build", "b"];
@@ -33,29 +33,8 @@ export class BuildCommand implements ICommand {
 
         await client.sendReadReceipt(roomId, event['event_id']);
 
-        let inputData;
-        switch (config.conference.backend.type) {
-            case "pentabarf": {
-                if (config.conference.backend.pentabarf) {
-                    inputData = await fetch(config.conference.backend.pentabarf.definition).then(r => r.text());
-                    break;
-                } else {
-                    const message = "Your bot is not set up correctly. Please check your config!";
-                    const reply = RichReply.createFor(roomId, event, message, message);
-                    reply["msgtype"] = "m.notice";
-                    await client.sendMessage(roomId, reply);
-                    return;
-                }
-            }
-            default: {
-                const message = "Your bot is not set up correctly. Please check your config!";
-                const reply = RichReply.createFor(roomId, event, message, message);
-                reply["msgtype"] = "m.notice";
-                await client.sendMessage(roomId, reply);
-                return;
-            }
-        }
-        const parsed = getConferenceParser(inputData);
+
+        const parsed = await getConferenceParser();
 
         if (!conference.isCreated) {
             await conference.createDb(parsed.conference);

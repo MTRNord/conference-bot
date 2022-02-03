@@ -226,9 +226,16 @@ conference:
         # The duration in seconds added to the talk `duration` to account for postroll material
         # such as sponsor segments. If this is built into the table already then set this to zero.
         schedulePostBufferSeconds: 30
+    # Config options for the pretalx.org backend which is accessed using their API
+    pretalx:
+      # Address of the instance
+      instanceDomain: ""
+      # Access token for the API
+      # See https://docs.pretalx.org/en/latest/api/fundamentals.html#obtaining-an-api-token on how to get a token
+      apiToken: ""
 
   # Various prefixes used by the bot when parsing information.
-  prefixes:
+  prefixesprefixes:
     # The prefixes for the rooms listed in the pentabarf definition which
     # describe the rooms that are 'auditorium' rooms. The prefixes will be
     # trimmed when naming the room (unless an override is present).

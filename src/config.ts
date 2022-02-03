@@ -102,6 +102,10 @@ interface IConfig {
                     schedulePostBufferSeconds: number;
                 };
             };
+            pretalx?: {
+                instanceDomain: string;
+                apiToken: string;
+            };
         };
     };
     ircBridge: IRCBridgeOpts;
