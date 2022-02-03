@@ -235,7 +235,7 @@ conference:
       apiToken: ""
 
   # Various prefixes used by the bot when parsing information.
-  prefixesprefixes:
+  prefixes:
     # The prefixes for the rooms listed in the pentabarf definition which
     # describe the rooms that are 'auditorium' rooms. The prefixes will be
     # trimmed when naming the room (unless an override is present).
