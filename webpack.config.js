@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-const path = require('path');
+const path = require('node:path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
@@ -41,6 +41,9 @@ module.exports = {
     },
     resolve: {
         extensions: ['.ts', '.js'],
+        fallback: {
+            "querystring": require.resolve("querystring-es3")
+        }
     },
     plugins: [
         new CleanWebpackPlugin({ cleanStaleWebpackAssets: false }),

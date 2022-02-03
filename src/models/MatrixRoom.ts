@@ -22,8 +22,7 @@ export class MatrixRoom {
     protected space: Space;
     protected canonicalAlias: string;
 
-    constructor(public readonly roomId: string, protected client: MatrixClient, protected conference: Conference) {
-    }
+    constructor(public readonly roomId: string, protected client: MatrixClient, protected conference: Conference) { }
 
     public async addDirectChild(roomId: string) {
         const state = makeChildRoom(roomId);
@@ -39,7 +38,7 @@ export class MatrixRoom {
         return this.space;
     }
 
-    public async getCanonicalAlias(): Promise<string> {
+    public async getCanonicalAlias(): Promise<string | undefined> {
         if (this.canonicalAlias) {
             return this.canonicalAlias;
         }
@@ -50,11 +49,11 @@ export class MatrixRoom {
                 this.canonicalAlias = ev['alias'];
                 return this.canonicalAlias;
             }
-        } catch (e) {
-            LogService.warn("MatrixRoom", e);
+        } catch (error) {
+            LogService.warn("MatrixRoom", error);
         }
 
-        return null;
+        return undefined;
     }
 }
 

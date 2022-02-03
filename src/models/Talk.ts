@@ -42,15 +42,18 @@ export class Talk extends MatrixRoom {
     }
 
     public async getName(): Promise<string> {
-        return (await this.getDefinition()).title;
+        const talkDefinition = await this.getDefinition();
+        return talkDefinition.title;
     }
 
     public async getId(): Promise<string> {
-        return (await this.getDefinition()).id;
+        const talkDefinition = await this.getDefinition();
+        return talkDefinition.id;
     }
 
     public async getConferenceId(): Promise<string> {
-        return (await this.getDefinition()).conferenceId;
+        const talkDefinition = await this.getDefinition();
+        return talkDefinition.conferenceId;
     }
 
     public async getAuditoriumId(): Promise<string> {

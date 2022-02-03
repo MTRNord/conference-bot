@@ -22,22 +22,22 @@ import { controlsEl, makeLivestream, muteButton, pause, play, videoEl } from "./
 import { addlQuery, isWidget, widgetId } from "./widgets";
 import { formatDuration, getAttr } from "./common";
 
-const messagesEl = document.getElementById("messages");
-const jitsiContainer = document.getElementById("jitsiContainer");
-const jitsiUnderlay = document.getElementById("jitsiUnderlay");
-const liveBanner = document.getElementById("liveBanner");
-const liveBannerShortText = document.getElementById("liveBannerShortText");
-const liveBannerLongText = document.getElementById("liveBannerLongText");
-const joinButton = document.getElementById('joinButton');
+const messagesEl = document.querySelector<HTMLElement>("#messages");
+const jitsiContainer = document.querySelector<HTMLElement>("#jitsiContainer");
+const jitsiUnderlay = document.querySelector<HTMLElement>("#jitsiUnderlay");
+const liveBanner = document.querySelector<HTMLElement>("#liveBanner");
+const liveBannerShortText = document.querySelector<HTMLElement>("#liveBannerShortText");
+const liveBannerLongText = document.querySelector<HTMLElement>("#liveBannerLongText");
+const joinButton = document.querySelector<HTMLElement>('#joinButton');
 
 const livestreamStartTime = getAttr('org.matrix.confbot.livestream_start_time') ?
-    parseInt(getAttr('org.matrix.confbot.livestream_start_time')) :
-    null;
+    Number.parseInt(getAttr('org.matrix.confbot.livestream_start_time') || "") :
+    undefined;
 const livestreamEndTime = getAttr('org.matrix.confbot.livestream_end_time') ?
-    parseInt(getAttr('org.matrix.confbot.livestream_end_time')) :
-    null;
+    Number.parseInt(getAttr('org.matrix.confbot.livestream_end_time') || "") :
+    undefined;
 
-let widgetApi: WidgetApi = null;
+let widgetApi: WidgetApi | undefined;
 
 // Start widget API as early as possible
 if (widgetId) {
@@ -46,16 +46,16 @@ if (widgetId) {
         widgetApi.requestCapabilities(VideoConferenceCapabilities);
         widgetApi.start();
         await new Promise<void>(resolve => {
-            widgetApi.once("ready", () => resolve());
+            widgetApi?.once("ready", () => resolve());
         });
         await widgetApi.setAlwaysOnScreen(false);
     })();
 }
 
 
-messagesEl.style.display = 'block';
+messagesEl!.style.display = 'block';
 if (isWidget) {
-    joinButton.style.display = 'block';
+    joinButton!.style.display = 'block';
 }
 
 makeLivestream(showVideo);
@@ -64,15 +64,15 @@ let widgetMode: "video" | "jitsi" = "video";
 
 function showVideo(ready = true) {
     if (widgetApi) widgetApi.setAlwaysOnScreen(false);
-    jitsiContainer.style.display = 'none';
-    jitsiUnderlay.style.display = 'none';
-    messagesEl.style.display = ready ? 'none' : 'block';
+    jitsiContainer!.style.display = 'none';
+    jitsiUnderlay!.style.display = 'none';
+    messagesEl!.style.display = ready ? 'none' : 'block';
     videoEl.style.display = ready ? 'block' : 'none';
-    controlsEl.style.display = 'block';
+    controlsEl!.style.display = 'block';
     if (isWidget) {
-        joinButton.style.display = 'inline';
+        joinButton!.style.display = 'inline';
     }
-    muteButton.style.display = ready ? 'inline' : 'none';
+    muteButton!.style.display = ready ? 'inline' : 'none';
 
     widgetMode = "video";
     updateLivestreamBanner();
@@ -81,11 +81,11 @@ function showVideo(ready = true) {
 function showJitsi() {
     pause();
     if (widgetApi) widgetApi.setAlwaysOnScreen(true);
-    jitsiContainer.style.display = 'block';
-    jitsiUnderlay.style.display = 'block';
-    messagesEl.style.display = 'none';
+    jitsiContainer!.style.display = 'block';
+    jitsiUnderlay!.style.display = 'block';
+    messagesEl!.style.display = 'none';
     videoEl.style.display = 'none';
-    controlsEl.style.display = 'none';
+    controlsEl!.style.display = 'none';
 
     widgetMode = "jitsi";
     updateLivestreamBanner();
@@ -105,14 +105,14 @@ const jitsiOpts = {
     userId: addlQuery["userId"],
     roomId: addlQuery["roomId"],
     auth: addlQuery["auth"],
-}
+};
 
-joinButton.addEventListener('click', () => {
+joinButton?.addEventListener('click', () => {
     showJitsi();
     joinConference(jitsiOpts, widgetApi, () => onJitsiEnd());
 });
 
-let liveBannerVisible: boolean = false;
+let liveBannerVisible = false;
 /**
  * Shows or hides the live banner.
  * @param visible `true` to show the live banner; `false` to hide it.
@@ -123,7 +123,7 @@ function setLiveBannerVisible(visible: boolean) {
     }
 
     liveBannerVisible = visible;
-    liveBanner.style.display = visible ? 'block' : 'none';
+    liveBanner!.style.display = visible ? 'block' : 'none';
 }
 
 /**
@@ -132,11 +132,11 @@ function setLiveBannerVisible(visible: boolean) {
  * @param longText The text to show when there is sufficient horizontal space.
  */
 function setLiveBannerText(shortText: string, longText: string) {
-    if (liveBannerShortText.innerText !== shortText) {
-        liveBannerShortText.innerText = shortText;
+    if (liveBannerShortText?.textContent !== shortText) {
+        liveBannerShortText!.textContent = shortText;
     }
-    if (liveBannerLongText.innerText !== longText) {
-        liveBannerLongText.innerText = longText;
+    if (liveBannerLongText?.textContent !== longText) {
+        liveBannerLongText!.textContent = longText;
     }
 }
 
@@ -144,11 +144,11 @@ function setLiveBannerText(shortText: string, longText: string) {
  * Updates the livestream banner.
  * @returns The interval until the next update, in milliseconds.
  */
-function updateLivestreamBanner(): number | null {
-    if (livestreamStartTime == null || livestreamEndTime == null) {
+function updateLivestreamBanner(): number | undefined {
+    if (livestreamStartTime == undefined || livestreamEndTime == undefined) {
         // Livestream start and end time are unavailable.
         setLiveBannerVisible(false);
-        return null;
+        return undefined;
     }
 
     const now = Date.now();
@@ -186,7 +186,7 @@ function updateLivestreamBanner(): number | null {
     } else {
         // The livestream has ended.
         setLiveBannerVisible(false);
-        return null;
+        return undefined;
     }
 }
 

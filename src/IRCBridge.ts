@@ -15,11 +15,10 @@ limitations under the License.
 */
 
 import { MatrixClient, MatrixEvent } from "matrix-bot-sdk";
-import * as irc from "irc-upd";
 import { Auditorium } from "./models/Auditorium";
 import { InterestRoom } from "./models/InterestRoom";
-import config from "./config";
 import { makeLocalpart } from "./utils/aliases";
+import { Client } from "matrix-org-irc";
 
 export interface IRCBridgeOpts {
     botNick: string;
@@ -30,7 +29,7 @@ export interface IRCBridgeOpts {
     port: number;
     botUserId: string;
     channelPrefix: string;
-    moderationBotNick: string|string[];
+    moderationBotNick: string | string[];
     ircBridgeNick: string;
     secure: boolean;
 }
@@ -39,22 +38,22 @@ interface IrcBridgeData {
     roomId: string;
 }
 
-const COMMAND_TIMEOUT_MS = 60000;
+const COMMAND_TIMEOUT_MS = 60_000;
 
 export class IRCBridge {
 
     private botRoomId?: string;
-    private ircClient: any;
+    private ircClient: Client;
     constructor(private readonly config: IRCBridgeOpts, private readonly mxClient: MatrixClient) {
         if (!config.botNick || !config.botUserId || !config.channelPrefix || !config.port || !config.serverName) {
-            throw Error('Missing configuration options for IRC bridge');
+            throw new Error('Missing configuration options for IRC bridge');
         }
     }
 
     public async deriveChannelName(auditorium: Auditorium) {
         const name = await auditorium.getName();
         if (!name) {
-            throw Error('Auditorium name is empty');
+            throw new Error('Auditorium name is empty');
         }
         return `${this.config.channelPrefix}${name}`;
     }
@@ -62,7 +61,7 @@ export class IRCBridge {
     public async deriveChannelNameSI(interest: InterestRoom) {
         const name = makeLocalpart(await interest.getName(), await interest.getId());
         if (!name) {
-            throw Error('Special interest name is empty');
+            throw new Error('Special interest name is empty');
         }
         return `${this.config.channelPrefix}${name}`;
     }
@@ -87,7 +86,7 @@ export class IRCBridge {
         // This should timeout if the connection is broken
         await this.executeCommand("bridgeversion");
 
-        this.ircClient = new irc.Client(this.config.serverName, this.config.botNick, {
+        this.ircClient = new Client(this.config.serverName, this.config.botNick, {
             port: this.config.port,
             password: this.config.botPassword,
             sasl: this.config.sasl || false,
@@ -96,7 +95,7 @@ export class IRCBridge {
             secure: this.config.secure !== undefined ? this.config.secure : true, // Default to true
         });
         this.ircClient.on("error", (...args) => {
-            console.warn("irc client got an error:", args)
+            console.warn("irc client got an error:", args);
         });
     }
 
@@ -110,7 +109,7 @@ export class IRCBridge {
         const result = await this.executeCommand(`plumb ${roomId} ${this.config.serverName} ${channel}`);
         const resultText = result.content.body;
         if (resultText !== 'Room plumbed.') {
-            throw Error(`IRC bridge gave an error: ${resultText}`);
+            throw new Error(`IRC bridge gave an error: ${resultText}`);
         }
         await this.ircClient.send("MODE", channel, "+o", this.config.ircBridgeNick);
         const moderatorNicks = Array.isArray(this.config.moderationBotNick) ? this.config.moderationBotNick : [this.config.moderationBotNick];
@@ -121,11 +120,14 @@ export class IRCBridge {
 
     public async executeCommand(command: string): Promise<MatrixEvent<any>> {
         if (!this.botRoomId) {
-            throw Error('No botRoomId defined. Was start() called?');
+            throw new Error('No botRoomId defined. Was start() called?');
         }
-        let requestEventId: string;
+        const requestEventId = await this.mxClient.sendText(this.botRoomId, `!${command}`);
         const promise = new Promise<MatrixEvent<any>>((resolve, reject) => {
-            let timeout: NodeJS.Timeout;
+            const timeout = setTimeout(() => {
+                this.mxClient.removeListener("room.message", handlerFn);
+                reject(new Error('Timed out waiting for bridge response'));
+            }, COMMAND_TIMEOUT_MS);
             const handlerFn = (roomId, event) => {
                 if (roomId !== this.botRoomId) {
                     return;
@@ -135,13 +137,8 @@ export class IRCBridge {
                     clearTimeout(timeout);
                 }
             };
-            timeout = setTimeout(() => {
-                this.mxClient.removeListener("room.message", handlerFn);
-                reject(new Error('Timed out waiting for bridge response'));
-            }, COMMAND_TIMEOUT_MS);
             this.mxClient.on("room.message", handlerFn);
         });
-        requestEventId = await this.mxClient.sendText(this.botRoomId, `!${command}`);
         return promise;
     }
 }

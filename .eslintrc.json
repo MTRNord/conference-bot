@@ -1,0 +1,20 @@
+{
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "extends": [
+        "plugin:@typescript-eslint/recommended",
+        "plugin:unicorn/recommended"
+    ],
+    "rules": {
+        "unicorn/prevent-abbreviations": "off",
+        "unicorn/filename-case": "off",
+        "unicorn/prefer-ternary": "off",
+        "unicorn/no-lonely-if": "off",
+        "unicorn/empty-brace-spaces": "off",
+        "unicorn/prefer-json-parse-buffer": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "@typescript-eslint/ban-ts-comment": "off"
+    }
+}

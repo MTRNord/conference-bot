@@ -18,7 +18,6 @@ import { ICommand } from "./ICommand";
 import { MatrixClient } from "matrix-bot-sdk";
 import { Conference } from "../Conference";
 import config from "../config";
-import { ScheduledTaskType } from "../Scheduler";
 
 export class RunCommand implements ICommand {
     public readonly prefixes = ["run"];

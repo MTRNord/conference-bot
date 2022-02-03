@@ -17,9 +17,6 @@ limitations under the License.
 import { ICommand } from "./ICommand";
 import { MatrixClient, MembershipEvent } from "matrix-bot-sdk";
 import { Conference } from "../Conference";
-import { LiveWidget } from "../models/LiveWidget";
-import { invitePersonToRoom, ResolvedPersonIdentifier } from "../invites";
-import { Role } from "../db/DbPerson";
 
 export class CopyModeratorsCommand implements ICommand {
     public readonly prefixes = ["copymods", "copymoderators", "copy_mods", "copy_moderators"];
@@ -47,9 +44,9 @@ export class CopyModeratorsCommand implements ICommand {
 
         const state = await client.getRoomState(toRoomId);
         const members = state.filter(s => s.type === "m.room.member").map(s => new MembershipEvent(s));
-        const effectiveJoinedUserIds = members.filter(m => m.effectiveMembership === "join").map(m => m.membershipFor);
+        const effectiveJoinedUserIds = new Set(members.filter(m => m.effectiveMembership === "join").map(m => m.membershipFor));
         for (const userId of Object.keys(toPl['users'])) {
-            if (!effectiveJoinedUserIds.includes(userId)) {
+            if (!effectiveJoinedUserIds.has(userId)) {
                 await client.inviteUser(userId, toRoomId);
             }
         }

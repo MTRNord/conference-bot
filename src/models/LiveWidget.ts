@@ -22,7 +22,6 @@ import config from "../config";
 import { MatrixClient } from "matrix-bot-sdk";
 import { Talk } from "./Talk";
 import * as template from "string-template";
-import { base32 } from "rfc4648";
 
 export interface ILayout {
     widgets: {
@@ -84,7 +83,7 @@ export class LiveWidget {
     }
 
     public static async hybridForRoom(roomId: string, client: MatrixClient): Promise<IStateEvent<IWidget>> {
-        const widgetId = sha256(JSON.stringify({roomId, kind: "hybrid"}));
+        const widgetId = sha256(JSON.stringify({ roomId, kind: "hybrid" }));
         return {
             type: "im.vector.modular.widgets",
             state_key: widgetId,
@@ -168,7 +167,7 @@ export class LiveWidget {
         };
     }
 
-    public static layoutForTalk(qa: IStateEvent<IWidget>, scoreboard: IStateEvent<IWidget>): IStateEvent<ILayout> {
+    public static layoutForTalk(qa: IStateEvent<IWidget>, scoreboard?: IStateEvent<IWidget>): IStateEvent<ILayout> {
         const val: IStateEvent<ILayout> = {
             type: "io.element.widgets.layout",
             state_key: "",

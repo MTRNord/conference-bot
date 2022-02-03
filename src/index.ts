@@ -19,7 +19,7 @@ limitations under the License.
 // TODO: Start webserver
 
 import { LogLevel, LogService, MatrixClient, SimpleFsStorageProvider, UserID } from "matrix-bot-sdk";
-import * as path from "path";
+import * as path from "node:path";
 import config from "./config";
 import { ICommand } from "./commands/ICommand";
 import { HelpCommand } from "./commands/HelpCommand";
@@ -57,11 +57,11 @@ import { CheckInMap } from "./CheckInMap";
 import { FDMCommand } from "./commands/FDMCommand";
 
 config.RUNTIME = {
-    client: null,
-    conference: null,
-    scheduler: null,
-    ircBridge: null,
-    checkins: null,
+    client: undefined,
+    conference: undefined,
+    scheduler: undefined,
+    ircBridge: undefined,
+    checkins: undefined,
 };
 
 process.on('SIGINT', () => {
@@ -90,7 +90,7 @@ config.RUNTIME.scheduler = scheduler;
 const ircBridge = new IRCBridge(config.ircBridge, client);
 config.RUNTIME.ircBridge = ircBridge;
 
-const checkins = new CheckInMap(client, conference);
+const checkins = new CheckInMap(client);
 config.RUNTIME.checkins = checkins;
 
 let localpart;
@@ -170,7 +170,7 @@ function registerCommands() {
 
         // Check age just in case we recently started
         const now = Date.now();
-        if (Math.abs(now - event['origin_server_ts']) >= 900000) { // 15min
+        if (Math.abs(now - event['origin_server_ts']) >= 900_000) { // 15min
             LogService.warn("index", `Ignoring ${event['event_id']} in management room due to age`);
             return;
         }
@@ -190,7 +190,7 @@ function registerCommands() {
         const prefixUsed = prefixes.find(p => content['body'].startsWith(p));
         if (!prefixUsed) return;
 
-        const restOfBody = content['body'].substring(prefixUsed.length).trim();
+        const restOfBody = content['body'].slice(prefixUsed.length).trim();
         const args = restOfBody.split(' ');
         if (args.length <= 0) {
             return await client.replyNotice(roomId, event, `Invalid command. Try ${prefixUsed.trim()} help`);
@@ -203,9 +203,9 @@ function registerCommands() {
                     return await command.run(conference, client, roomId, event, args.slice(1));
                 }
             }
-        } catch (e) {
-            LogService.error("index", "Error processing command: ", e);
-            return await client.replyNotice(roomId, event, `There was an error processing your command: ${e.message}`);
+        } catch (error) {
+            LogService.error("index", "Error processing command: ", error);
+            return await client.replyNotice(roomId, event, `There was an error processing your command: ${error.message}`);
         }
 
         return await client.replyNotice(roomId, event, `Unknown command. Try ${prefixUsed.trim()} help`);
@@ -219,7 +219,8 @@ function setupWebserver() {
         root: tmplPath,
         cache: process.env.NODE_ENV === 'production',
     });
-    app.use(express.urlencoded({extended: true}));
+    // @ts-ignore Bug in express types.
+    app.use(express.urlencoded({ extended: true }));
     app.use('/assets', express.static(config.webserver.additionalAssetsPath));
     app.use('/bundles', express.static(path.join(tmplPath, 'bundles')));
     app.engine('liquid', engine.express());

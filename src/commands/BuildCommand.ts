@@ -16,14 +16,14 @@ limitations under the License.
 
 import { ICommand } from "./ICommand";
 import { LogLevel, MatrixClient, MentionPill, RichReply } from "matrix-bot-sdk";
-import * as fetch from "node-fetch";
-import { PentabarfParser } from "../parsers/PentabarfParser";
+import fetch from "node-fetch";
 import { Auditorium } from "../models/Auditorium";
 import { ITalk } from "../models/schedule";
 import config from "../config";
 import { Conference } from "../Conference";
 import { logMessage } from "../LogProxy";
 import { editNotice } from "../utils";
+import { getConferenceParser } from "../parsers/AParser";
 
 export class BuildCommand implements ICommand {
     public readonly prefixes = ["build", "b"];
@@ -33,14 +33,36 @@ export class BuildCommand implements ICommand {
 
         await client.sendReadReceipt(roomId, event['event_id']);
 
-        const xml = await fetch(config.conference.pentabarfDefinition).then(r => r.text());
-        const parsed = new PentabarfParser(xml);
+        let inputData;
+        switch (config.conference.backendType) {
+            case "pentabarf": {
+                if (config.conference.pentabarfDefinition) {
+                    inputData = await fetch(config.conference.pentabarfDefinition).then(r => r.text());
+                    break;
+                } else {
+                    const message = "Your bot is not set up correctly. Please check your config!";
+                    const reply = RichReply.createFor(roomId, event, message, message);
+                    reply["msgtype"] = "m.notice";
+                    await client.sendMessage(roomId, reply);
+                    return;
+                }
+            }
+            default: {
+                const message = "Your bot is not set up correctly. Please check your config!";
+                const reply = RichReply.createFor(roomId, event, message, message);
+                reply["msgtype"] = "m.notice";
+                await client.sendMessage(roomId, reply);
+                return;
+            }
+        }
+        const parsed = getConferenceParser(inputData);
 
         if (!conference.isCreated) {
             await conference.createDb(parsed.conference);
         }
 
-        const spacePill = await MentionPill.forRoom((await conference.getSpace()).roomId, client);
+        const space = await conference.getSpace();
+        const spacePill = await MentionPill.forRoom(space.roomId, client);
         const messagePrefix = "Conference prepared! Making rooms for later use (this will take a while)...";
         const reply = RichReply.createFor(roomId, event,
             messagePrefix + "\n\nYour conference's space is at " + spacePill.text,
@@ -76,8 +98,8 @@ export class BuildCommand implements ICommand {
             if (!pentaAud) return await logMessage(LogLevel.ERROR, "BuildCommand", `Cannot find auditorium: ${audId}`);
 
             const allTalks: ITalk[] = [];
-            Object.values(pentaAud.talksByDate).forEach(ea => allTalks.push(...ea));
-            const pentaTalk =  allTalks.find(t => t.id === talkId);
+            for (const ea of Object.values(pentaAud.talksByDate)) allTalks.push(...ea);
+            const pentaTalk = allTalks.find(t => t.id === talkId);
             if (!pentaTalk) return await logMessage(LogLevel.ERROR, "BuildCommand", `Cannot find talk in room: ${audId} ${talkId}`);
 
             await conference.createAuditoriumBackstage(pentaAud);
@@ -134,9 +156,8 @@ export class BuildCommand implements ICommand {
                         `${auditoriumsCreated}/${parsed.auditoriums.length} auditoriums have been created`,
                     );
 
-                    Object.values(auditorium.talksByDate)
-                        .map(dayTalks => dayTalks.map(talk => [talk, confAud] as [ITalk, Auditorium]))
-                        .forEach(dayTalks => talks.push(...dayTalks));
+                    for (const dayTalks of Object.values(auditorium.talksByDate)
+                        .map(dayTalks => dayTalks.map(talk => [talk, confAud] as [ITalk, Auditorium]))) talks.push(...dayTalks);
                 }
 
                 if (!args.includes("notalks")) {

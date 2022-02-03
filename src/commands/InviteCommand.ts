@@ -49,16 +49,19 @@ export class InviteCommand implements ICommand {
             }
             people = people.filter(p => p.event_role === Role.Speaker);
             const newPeople: IDbPerson[] = [];
-            people.forEach(p => {
+            for (const p of people) {
                 if (!newPeople.some(n => n.person_id === p.person_id)) {
                     newPeople.push(p);
                 }
-            });
+            }
             await this.createInvites(client, newPeople, config.conference.supportRooms.speakers);
         } else if (args[0] && args[0] === "coordinators-support") {
-            let people: IDbPerson[] = [];
+            const people: IDbPerson[] = [];
+            const db = await conference.getBackendDb();
+            const dbSystem = db.getSystemName();
             for (const aud of conference.storedAuditoriums) {
-                if (!(await aud.getId()).startsWith("D.")) {
+                const auditoriumId = await aud.getId();
+                if (dbSystem === "pentabarf" && !(auditoriumId).startsWith("D.")) {
                     // HACK: Only invite coordinators for D.* auditoriums.
                     // TODO: Make invitations for support rooms more configurable.
                     //       https://github.com/matrix-org/conference-bot/issues/76
@@ -69,11 +72,11 @@ export class InviteCommand implements ICommand {
                 people.push(...inviteTargets.filter(i => i.event_role === Role.Coordinator));
             }
             const newPeople: IDbPerson[] = [];
-            people.forEach(p => {
+            for (const p of people) {
                 if (!newPeople.some(n => n.person_id == p.person_id)) {
                     newPeople.push(p);
                 }
-            });
+            }
             await this.createInvites(client, newPeople, config.conference.supportRooms.coordinators);
         } else if (args[0] && args[0] === "si-support") {
             const people: IDbPerson[] = [];
@@ -92,16 +95,16 @@ export class InviteCommand implements ICommand {
         // We don't want to invite anyone we have already invited or that has joined though, so
         // avoid those people. We do this by querying the room state and filtering.
         const state = await client.getRoomState(roomId);
-        const emailInvitePersonIds = state.filter(s => s.type === "m.room.third_party_invite").map(s => s.content?.[RS_3PID_PERSON_ID]).filter(i => !!i);
+        const emailInvitePersonIds = new Set(state.filter(s => s.type === "m.room.third_party_invite").map(s => s.content?.[RS_3PID_PERSON_ID]).filter(i => !!i));
         const members = state.filter(s => s.type === "m.room.member").map(s => new MembershipEvent(s));
-        const effectiveJoinedUserIds = members.filter(m => m.effectiveMembership === "join").map(m => m.membershipFor);
+        const effectiveJoinedUserIds = new Set(members.filter(m => m.effectiveMembership === "join").map(m => m.membershipFor));
         for (const target of people) {
-            if (target.mxid && effectiveJoinedUserIds.includes(target.mxid)) continue;
-            if (emailInvitePersonIds.includes(target.person.person_id)) continue;
+            if (target.mxid && effectiveJoinedUserIds.has(target.mxid)) continue;
+            if (emailInvitePersonIds.has(target.person.person_id)) continue;
             try {
                 await invitePersonToRoom(target, roomId);
-            } catch (e) {
-                LogService.error("InviteCommand", e);
+            } catch (error) {
+                LogService.error("InviteCommand", error);
                 await logMessage(LogLevel.ERROR, "InviteCommand", `Error inviting ${target.mxid} / ${target.person.person_id} to ${roomId} - ignoring`);
             }
         }

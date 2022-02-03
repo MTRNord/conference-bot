@@ -20,5 +20,5 @@ export const urlParams = (new URL(window.location.href)).searchParams;
 export const widgetId = urlParams.get("widgetId");
 export const isWidget = widgetId && widgetId !== "$matrix_widget_id";
 
-const widgetQuery = qs.parse(window.location.hash.substring(1));
-export const addlQuery = Object.assign({}, qs.parse(window.location.search.substring(1)), widgetQuery);
+const widgetQuery = qs.parse(window.location.hash.slice(1));
+export const addlQuery = Object.assign({}, qs.parse(window.location.search.slice(1)), widgetQuery);

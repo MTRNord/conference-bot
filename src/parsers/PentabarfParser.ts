@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import * as parser from 'fast-xml-parser';
 import { IAuditorium, IConference, IInterestRoom, IPerson, ITalk } from "../models/schedule";
-import * as moment from "moment";
 import { RoomKind } from "../models/room_kinds";
-import config from "../config";
+import config, { AvailableBackends } from "../config";
+import { ConferenceParser } from './AParser';
+import { XMLParser } from "fast-xml-parser";
+import { DateTime } from "luxon";
 
 export interface IPentabarfEvent {
     attr: {
@@ -87,28 +88,28 @@ function arrayLike<T>(val: T | T[]): T[] {
     return [val];
 }
 
-function simpleTimeParse(str: string): { hours: number, minutes: number } {
+function simpleTimeParse(str: string): { hours: number, minutes: number; } {
     const parts = str.split(':');
-    return {hours: Number(parts[0]), minutes: Number(parts[1])};
+    return { hours: Number(parts[0]), minutes: Number(parts[1]) };
 }
 
-export function deprefix(id: string): {kind: RoomKind, name: string} {
+export function deprefix(id: string): { kind: RoomKind, name: string; } {
     const override = config.conference.prefixes.nameOverrides[id];
 
     const auditoriumPrefix = config.conference.prefixes.auditoriumRooms.find(p => id.startsWith(p));
     if (auditoriumPrefix) {
-        return {kind: RoomKind.Auditorium, name: override || id.substring(auditoriumPrefix.length)};
+        return { kind: RoomKind.Auditorium, name: override || id.slice(auditoriumPrefix.length) };
     }
 
     const interestPrefix = config.conference.prefixes.interestRooms.find(p => id.startsWith(p));
     if (interestPrefix) {
-        return {kind: RoomKind.SpecialInterest, name: override || id.substring(interestPrefix.length)};
+        return { kind: RoomKind.SpecialInterest, name: override || id.slice(interestPrefix.length) };
     }
 
-    return {kind: RoomKind.SpecialInterest, name: override || id};
+    return { kind: RoomKind.SpecialInterest, name: override || id };
 }
 
-export class PentabarfParser {
+export class PentabarfParser extends ConferenceParser {
     public readonly parsed: IPentabarfSchedule;
 
     public readonly conference: IConference;
@@ -118,11 +119,13 @@ export class PentabarfParser {
     public readonly interestRooms: IInterestRoom[];
 
     constructor(rawXml: string) {
-        this.parsed = parser.parse(rawXml, {
-            attrNodeName: "attr",
+        super();
+        const parser = new XMLParser({
+            attributesGroupName: "attr",
             textNodeName: "#text",
             ignoreAttributes: false,
         });
+        this.parsed = parser.parse(rawXml);
 
         this.auditoriums = [];
         this.talks = [];
@@ -137,13 +140,13 @@ export class PentabarfParser {
         for (const day of arrayLike(this.parsed.schedule?.day)) {
             if (!day) continue;
 
-            const dateTs = moment.utc(day.attr?.["@_date"], "YYYY-MM-DD").valueOf();
+            const dateTs = DateTime.fromISO(day.attr?.["@_date"]).toMillis();
             for (const pRoom of arrayLike(day.room)) {
                 if (!pRoom) continue;
 
                 const metadata = deprefix(pRoom.attr?.["@_name"] || "org.matrix.confbot.unknown");
                 if (metadata.kind === RoomKind.SpecialInterest) {
-                    let spiRoom: IInterestRoom = {
+                    const spiRoom: IInterestRoom = {
                         id: pRoom.attr?.["@_name"],
                         name: metadata.name,
                         kind: metadata.kind,
@@ -173,13 +176,13 @@ export class PentabarfParser {
 
                     const parsedStartTime = simpleTimeParse(pEvent.start);
                     const parsedDuration = simpleTimeParse(pEvent.duration);
-                    const startTime = moment(dateTs).add(parsedStartTime.hours, 'hours').add(parsedStartTime.minutes, 'minutes');
-                    const endTime = moment(startTime).add(parsedDuration.hours, 'hours').add(parsedDuration.minutes, 'minutes');
+                    const startTime = DateTime.fromMillis(dateTs).plus({ hours: parsedStartTime.hours, minutes: parsedStartTime.minutes });
+                    const endTime = startTime.plus({ hours: parsedDuration.hours, minutes: parsedDuration.minutes });
                     let talk: ITalk = {
                         id: pEvent.attr?.["@_id"],
                         dateTs: dateTs,
-                        startTime: startTime.valueOf(),
-                        endTime: endTime.valueOf(),
+                        startTime: startTime.toMillis(),
+                        endTime: endTime.toMillis(),
                         slug: pEvent.slug,
                         title: pEvent.title,
                         subtitle: pEvent.subtitle,
@@ -215,5 +218,9 @@ export class PentabarfParser {
                 }
             }
         }
+    }
+
+    public getSystemName(): AvailableBackends {
+        return "pentabarf";
     }
 }

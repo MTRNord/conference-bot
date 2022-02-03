@@ -17,8 +17,8 @@ limitations under the License.
 import { Conference } from "./Conference";
 import { LogService, MatrixClient, Permalinks, UserID } from "matrix-bot-sdk";
 import AwaitLock from "await-lock";
-import {promises as fs} from "fs";
-import * as path from "path";
+import { promises as fs } from "node:fs";
+import * as path from "node:path";
 import config from "./config";
 import { isEmojiVariant } from "./utils";
 
@@ -41,13 +41,18 @@ export interface CachedMessage {
     senderAvatarHttpUrl?: string;
 }
 
+interface ScoreboardJson {
+    version: number;
+    rooms: RoomScoreboard[];
+}
+
 export interface RoomScoreboard {
     /**
      * The start time of the current talk's Q&A session, as a Unix timestamp in milliseconds.
      *
      * When provided, a countdown or in-progress indicator is shown on the scoreboard.
      */
-    qaStartTime: number | null;
+    qaStartTime?: number;
     messages: RoomMessage[];
 }
 
@@ -57,7 +62,7 @@ export interface CachedScoreboard {
      *
      * When provided, a countdown or in-progress indicator is shown on the scoreboard.
      */
-    qaStartTime: number | null;
+    qaStartTime?: number;
     ordered: CachedMessage[];
 }
 
@@ -105,17 +110,17 @@ export class Scoreboard {
      * Expects the scoreboard lock to not be held by the caller.
      */
     public async load() {
-        let json: any;
+        let json: ScoreboardJson;
         try {
-            const data = await fs.readFile(this.path, {encoding: 'utf-8'});
+            const data = await fs.readFile(this.path, "utf8");
             json = JSON.parse(data);
-        } catch (e) {
-            if (e.code === 'ENOENT') {
+        } catch (error) {
+            if (error.code === 'ENOENT') {
                 // No previous scoreboard to load
-            } else if (e instanceof SyntaxError) {
-                LogService.warn("Scoreboard", `Cannot load scoreboard: invalid JSON: ${e.message}`);
+            } else if (error instanceof SyntaxError) {
+                LogService.warn("Scoreboard", `Cannot load scoreboard: invalid JSON: ${error.message}`);
             } else {
-                LogService.warn("Scoreboard", "Cannot load scoreboard:", e);
+                LogService.warn("Scoreboard", "Cannot load scoreboard:", error);
             }
 
             return;
@@ -171,7 +176,7 @@ export class Scoreboard {
         await this.lock.acquireAsync();
         try {
             this.byRoom[roomId] = {
-                qaStartTime: null,
+                qaStartTime: undefined,
                 messages: [],
             };
             await this.calculateRoom(roomId);
@@ -192,9 +197,9 @@ export class Scoreboard {
         try {
             if (!(roomId in this.byRoom)) {
                 this.byRoom[roomId] = {
-                    qaStartTime: null,
+                    qaStartTime: undefined,
                     messages: [],
-                }
+                };
             }
 
             this.byRoom[roomId].qaStartTime = qaStartTime;
@@ -252,7 +257,7 @@ export class Scoreboard {
             let scoreboard = this.byRoom[roomId];
             if (!scoreboard) {
                 this.byRoom[roomId] = {
-                    qaStartTime: null,
+                    qaStartTime: undefined,
                     messages: [],
                 };
                 scoreboard = this.byRoom[roomId];
@@ -280,10 +285,10 @@ export class Scoreboard {
                     const profile = await this.client.getUserProfile(message.senderId);
                     if (profile['displayname']) message.senderName = profile['displayname'];
                     if (profile['avatar_url'] && profile['avatar_url'].startsWith('mxc://')) {
-                        const parts = profile['avatar_url'].substring('mxc://'.length).split('/');
+                        const parts = profile['avatar_url'].slice('mxc://'.length).split('/');
                         message.senderHttpUrl = `${this.client.homeserverUrl}/_matrix/media/r0/thumbnail/${encodeURIComponent(parts[0])}/${encodeURIComponent(parts[1])}?method=crop&width=64&height=64`;
                     }
-                } catch (e) {
+                } catch {
                     // ignore
                 }
 
@@ -314,11 +319,11 @@ export class Scoreboard {
             if (!upvoteMessage && !downvoteMessage) return;
 
             if (upvoteMessage) {
-                const idx = upvoteMessage.activeUpvoteIds.findIndex(i => i === event['redacts']);
+                const idx = upvoteMessage.activeUpvoteIds.indexOf(event['redacts']);
                 if (idx >= 0) upvoteMessage.activeUpvoteIds.splice(idx, 1);
             }
             if (downvoteMessage) {
-                const idx = downvoteMessage.activeDownvoteIds.findIndex(i => i === event['redacts']);
+                const idx = downvoteMessage.activeDownvoteIds.indexOf(event['redacts']);
                 if (idx >= 0) downvoteMessage.activeDownvoteIds.splice(idx, 1);
             }
 

@@ -15,21 +15,22 @@ limitations under the License.
 */
 
 import { Pool } from "pg";
-import config from "../config";
-import { IDbPerson, Role } from "./DbPerson";
+import config, { AvailableBackends } from "../config";
+import { IDbPerson } from "./DbPerson";
 import { LogService, UserID } from "matrix-bot-sdk";
 import { objectFastClone } from "../utils";
 import { IDbTalk, IRawDbTalk } from "./DbTalk";
+import { DBBackend } from "./backendDb";
 
-const PEOPLE_SELECT = "SELECT event_id::text, person_id::text, event_role::text, name::text, email::text, matrix_id::text, conference_room::text, remark::text FROM " + config.conference.database.tblPeople;
-const NONEVENT_PEOPLE_SELECT = "SELECT DISTINCT 'ignore' AS event_id, person_id::text, event_role::text, name::text, email::text, matrix_id::text, conference_room::text FROM " + config.conference.database.tblPeople;
+const PEOPLE_SELECT = "SELECT event_id::text, person_id::text, event_role::text, name::text, email::text, matrix_id::text, conference_room::text, remark::text FROM " + config.conference.database.pentabarfTables.tblPeople;
+const NONEVENT_PEOPLE_SELECT = "SELECT DISTINCT 'ignore' AS event_id, person_id::text, event_role::text, name::text, email::text, matrix_id::text, conference_room::text FROM " + config.conference.database.pentabarfTables.tblPeople;
 
 const START_QUERY = "start_datetime AT TIME ZONE $1 AT TIME ZONE 'UTC'";
 const QA_START_QUERY = "(start_datetime + presentation_length) AT TIME ZONE $1 AT TIME ZONE 'UTC'";
 const END_QUERY = "(start_datetime + duration) AT TIME ZONE $1 AT TIME ZONE 'UTC'";
-const SCHEDULE_SELECT = `SELECT DISTINCT event_id::text, conference_room::text, EXTRACT(EPOCH FROM ${START_QUERY}) * 1000 AS start_datetime, EXTRACT(EPOCH FROM duration) AS duration_seconds, EXTRACT(EPOCH FROM presentation_length) AS presentation_length_seconds, EXTRACT(EPOCH FROM ${END_QUERY}) * 1000 AS end_datetime, EXTRACT(EPOCH FROM ${QA_START_QUERY}) * 1000 AS qa_start_datetime, prerecorded FROM ` + config.conference.database.tblSchedule;
+const SCHEDULE_SELECT = `SELECT DISTINCT event_id::text, conference_room::text, EXTRACT(EPOCH FROM ${START_QUERY}) * 1000 AS start_datetime, EXTRACT(EPOCH FROM duration) AS duration_seconds, EXTRACT(EPOCH FROM presentation_length) AS presentation_length_seconds, EXTRACT(EPOCH FROM ${END_QUERY}) * 1000 AS end_datetime, EXTRACT(EPOCH FROM ${QA_START_QUERY}) * 1000 AS qa_start_datetime, prerecorded FROM ` + config.conference.database.pentabarfTables.tblSchedule;
 
-export class PentaDb {
+export class PentaDb implements DBBackend {
     private client: Pool;
     private isConnected = false;
 
@@ -46,18 +47,17 @@ export class PentaDb {
                 rejectUnauthorized: config.conference.database.sslmode === 'no-verify',
             },
         });
+        this.connect();
     }
 
-    public async connect() {
+    public getSystemName(): AvailableBackends {
+        return "pentabarf";
+    }
+
+    private async connect() {
         if (this.isConnected) return;
         await this.client.connect();
         this.isConnected = true;
-    }
-
-    public async disconnect() {
-        if (!this.isConnected) return;
-        await this.client.end();
-        this.isConnected = false;
     }
 
     public async findPeopleWithId(personId: string): Promise<IDbPerson[]> {
@@ -71,11 +71,6 @@ export class PentaDb {
         }
     }
 
-    public async findAllPeople(): Promise<IDbPerson[]> {
-        const result = await this.client.query<IDbPerson>(`${PEOPLE_SELECT}`);
-        return this.sanitizeRecords(result.rows);
-    }
-
     public async findAllPeopleForAuditorium(auditoriumId: string): Promise<IDbPerson[]> {
         const result = await this.client.query<IDbPerson>(`${NONEVENT_PEOPLE_SELECT} WHERE conference_room = $1`, [auditoriumId]);
         return this.sanitizeRecords(result.rows);
@@ -83,11 +78,6 @@ export class PentaDb {
 
     public async findAllPeopleForTalk(talkId: string): Promise<IDbPerson[]> {
         const result = await this.client.query<IDbPerson>(`${PEOPLE_SELECT} WHERE event_id = $1`, [talkId]);
-        return this.sanitizeRecords(result.rows);
-    }
-
-    public async findAllPeopleWithRole(role: Role): Promise<IDbPerson[]> {
-        const result = await this.client.query<IDbPerson>(`${PEOPLE_SELECT} WHERE event_role = $1`, [role]);
         return this.sanitizeRecords(result.rows);
     }
 
@@ -111,13 +101,13 @@ export class PentaDb {
     /**
      * Gets the record for a talk.
      * @param talkId The talk ID.
-     * @returns The record for the talk, if it exists; `null` otherwise.
+     * @returns The record for the talk, if it exists; `undefined` otherwise.
      */
-    public async getTalk(talkId: string): Promise<IDbTalk | null> {
+    public async getTalk(talkId: string): Promise<IDbTalk | undefined> {
         const result = await this.client.query(
             `${SCHEDULE_SELECT} WHERE event_id::text = $2`,
             [config.conference.timezone, talkId]);
-        return result.rowCount > 0 ? this.postprocessDbTalk(result.rows[0]) : null;
+        return result.rowCount > 0 ? this.postprocessDbTalk(result.rows[0]) : undefined;
     }
 
     private async getTalksWithin(timeQuery: string, inNextMinutes: number, minBefore: number): Promise<IDbTalk[]> {
@@ -151,7 +141,7 @@ export class PentaDb {
     }
 
     private postprocessDbTalks(rows: IRawDbTalk[]): IDbTalk[] {
-        return rows.map(this.postprocessDbTalk);
+        return rows.map(talk => this.postprocessDbTalk(talk));
     }
 
     private sanitizeRecords(rows: IDbPerson[]): IDbPerson[] {
@@ -165,9 +155,9 @@ export class PentaDb {
                     const parsed = new UserID(userId);
                     r.matrix_id = parsed.toString().trim();
                 }
-            } catch (e) {
-                LogService.warn("PentaDb", "Invalid user ID: " + userId, e);
-                r.matrix_id = null; // force clear
+            } catch (error) {
+                LogService.warn("PentaDb", "Invalid user ID: " + userId, error);
+                r.matrix_id = undefined; // force clear
             }
             return r;
         });

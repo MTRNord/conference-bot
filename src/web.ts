@@ -20,7 +20,7 @@ import config from "./config";
 import { base32 } from "rfc4648";
 import { LogService } from "matrix-bot-sdk";
 import { sha256 } from "./utils";
-import * as dns from "dns";
+import * as dns from "node:dns";
 import { Scoreboard } from "./Scoreboard";
 import { LiveWidget } from "./models/LiveWidget";
 import { IDbTalk } from "./db/DbTalk";
@@ -37,7 +37,7 @@ export function renderAuditoriumWidget(req: Request, res: Response) {
 
     const streamUrl = template(config.livestream.auditoriumUrl, {
         id: audId.toLowerCase(),
-        sId: audId.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        sId: audId.toLowerCase().replace(/[^\da-z]/g, ''),
     });
 
     return res.render('auditorium.liquid', {
@@ -101,9 +101,10 @@ export async function renderTalkWidget(req: Request, res: Response) {
     // Pentabarf database for every visiting attendee once talk rooms are opened to the public.
     const dbTalk = await getDbTalk(talkId);
 
+    const talkDefinition = await talk.getDefinition();
     const streamUrl = template(config.livestream.talkUrl, {
         audId: audId.toLowerCase(),
-        slug: (await talk.getDefinition()).slug.toLowerCase(),
+        slug: talkDefinition.slug.toLowerCase(),
         jitsi: base32.stringify(Buffer.from(talk.roomId), { pad: false }).toLowerCase(),
     });
 
@@ -163,15 +164,16 @@ export async function rtmpRedirect(req: Request, res: Response) {
         // First we un-base32 the conference name (because prosody auth)
         const confName = req.body?.['name'];
         if (!confName) return res.sendStatus(200); // imply no mapping
-        const mxRoomId = Buffer.from(base32.parse(confName, {loose: true})).toString();
+        const mxRoomId = Buffer.from(base32.parse(confName, { loose: true })).toString();
 
         // Try to find a talk with that room ID
         const talk = config.RUNTIME.conference.storedTalks.find(t => t.roomId === mxRoomId);
         if (!talk) return res.sendStatus(200); // Annoying thing of nginx wanting "no mapping" to be 200 OK
 
         // Redirect to RTMP URL
+        const auditoriumId = await talk.getAuditoriumId();
         const hostname = template(config.livestream.onpublish.rtmpHostnameTemplate, {
-            squishedAudId: (await talk.getAuditoriumId()).replace(/[^a-zA-Z0-9]/g, '').toLowerCase(),
+            squishedAudId: auditoriumId.replace(/[^\dA-Za-z]/g, '').toLowerCase(),
         });
         const ip = await dns.promises.resolve(hostname);
         const uri = template(config.livestream.onpublish.rtmpUrlTemplate, {
@@ -179,8 +181,8 @@ export async function rtmpRedirect(req: Request, res: Response) {
             saltedHash: sha256((await talk.getId()) + '.' + config.livestream.onpublish.salt),
         });
         return res.redirect(uri);
-    } catch (e) {
-        LogService.error("web", "Error trying to do onpublish:", e);
+    } catch (error) {
+        LogService.error("web", "Error trying to do onpublish:", error);
         return res.sendStatus(500);
     }
 }
@@ -228,6 +230,6 @@ export function renderScoreboard(req: Request, res: Response, scoreboard: Scoreb
     if (!auditorium) return res.sendStatus(404);
 
     let sb = scoreboard.getScoreboard(auditorium.roomId);
-    sb = sb || {qaStartTime: null, ordered: []};
+    sb = sb || { qaStartTime: undefined, ordered: [] };
     res.send(sb);
 }

@@ -8,9 +8,8 @@
     "noImplicitAny": false,
     "sourceMap": true,
     "outDir": "./lib",
-    "types": [
-      "node"
-    ]
+    "types": [],
+    "strict": false
   },
   "include": [
     "./src/**/*"

@@ -50,17 +50,17 @@ import { Auditorium, AuditoriumBackstage } from "./models/Auditorium";
 import { Talk } from "./models/Talk";
 import { ResolvedPersonIdentifier, resolveIdentifiers } from "./invites";
 import { IDbPerson, Role } from "./db/DbPerson";
-import { PentaDb } from "./db/PentaDb";
 import { PermissionsCommand } from "./commands/PermissionsCommand";
 import { InterestRoom } from "./models/InterestRoom";
 import { IStateEvent } from "./models/room_state";
 import { IDbTalk } from "./db/DbTalk";
+import { DBBackend, getBackendDB } from "./db/backendDb";
 
 export class Conference {
     private dbRoom: MatrixRoom;
-    private pentaDb = new PentaDb();
+    private backendDb = getBackendDB();
     private subspaces: {
-        [subspaceId: string]: Space
+        [subspaceId: string]: Space;
     } = {};
     private auditoriums: {
         [auditoriumId: string]: Auditorium;
@@ -93,7 +93,8 @@ export class Conference {
                     if (verifiableCreateEvent?.['sender'] === (await this.client.getUserId())) {
                         if (verifiable3pidInvite?.['sender'] === (await this.client.getUserId())) {
                             // Alright, we know it's us who sent it. Now let's check the database.
-                            const people = await (await this.getPentaDb()).findPeopleWithId(emailInvite[RS_3PID_PERSON_ID]);
+                            const db = await this.getBackendDb();
+                            const people = await db.findPeopleWithId(emailInvite[RS_3PID_PERSON_ID]);
                             if (people?.length) {
                                 // Finally, associate the users.
                                 for (const person of people) {
@@ -157,7 +158,7 @@ export class Conference {
     }
 
     private reset() {
-        this.dbRoom = null;
+        this.dbRoom = undefined;
         this.subspaces = {};
         this.auditoriums = {};
         this.auditoriumBackstages = {};
@@ -213,7 +214,7 @@ export class Conference {
             let roomId: string;
             try {
                 roomId = await this.client.resolveRoom(roomIdOrAlias);
-            } catch (e) {
+            } catch {
                 // The room probably doesn't exist yet.
                 continue;
             }
@@ -223,7 +224,8 @@ export class Conference {
 
         // Locate other metadata in the room
         if (!this.dbRoom) return;
-        const dbState = (await this.client.getRoomState(this.dbRoom.roomId)).filter(s => !!s.content);
+        const roomState = await this.client.getRoomState(this.dbRoom.roomId);
+        const dbState = roomState.filter(s => !!s.content);
 
         const people = dbState.filter(s => s.type === RS_STORED_PERSON).map(s => s.content as IStoredPerson);
         for (const person of people) {
@@ -274,13 +276,12 @@ export class Conference {
             space.roomId,
             "m.room.guest_access",
             "",
-            {guest_access:"can_join"},
+            { guest_access: "can_join" },
         );
     }
 
-    public async getPentaDb(): Promise<PentaDb> {
-        await this.pentaDb.connect();
-        return this.pentaDb;
+    public async getBackendDb(): Promise<DBBackend> {
+        return this.backendDb;
     }
 
     public async getSpace(): Promise<Space> {
@@ -299,7 +300,7 @@ export class Conference {
         for (const alias of roomAliases) {
             try {
                 await this.client.resolveRoom(alias);
-            } catch (e) {
+            } catch {
                 // The room doesn't exist yet, probably.
                 const roomId = await safeCreateRoom(
                     this.client,
@@ -308,7 +309,8 @@ export class Conference {
                         invite: [config.moderatorUserId],
                     }),
                 );
-                (await this.getSpace()).addChildRoom(roomId);
+                const space = await this.getSpace();
+                space.addChildRoom(roomId);
             }
         }
     }
@@ -340,14 +342,15 @@ export class Conference {
         }
 
         // Ensure that the subspace appears within the conference space.
-        await (await this.getSpace()).addChildSpace(subspace);
+        const space = await this.getSpace();
+        await space.addChildSpace(subspace);
 
         // Ensure that the subspace can be viewed by guest users.
         await this.client.sendStateEvent(
             subspace.roomId,
             "m.room.guest_access",
             "",
-            {guest_access:"can_join"},
+            { guest_access: "can_join" },
         );
 
         return subspace;
@@ -505,7 +508,7 @@ export class Conference {
             roomId = this.talks[talk.id].roomId;
 
             // Ensure that the room has the correct name.
-            await this.client.sendStateEvent(roomId, "m.room.name", "", {name: talk.title});
+            await this.client.sendStateEvent(roomId, "m.room.name", "", { name: talk.title });
         }
 
         // TODO: Send widgets after creation
@@ -515,7 +518,8 @@ export class Conference {
         // Ensure that the room appears within the correct space.
         await auditorium.addDirectChild(roomId);
         const startTime = new Date(talk.startTime).toISOString();
-        await (await auditorium.getSpace()).addChildRoom(roomId, { order: `3-talk-${startTime}` });
+        const space = await auditorium.getSpace();
+        await space.addChildRoom(roomId, { order: `3-talk-${startTime}` });
 
         return this.talks[talk.id];
     }
@@ -558,60 +562,63 @@ export class Conference {
     }
 
     public async getPeopleForAuditorium(auditorium: Auditorium): Promise<IDbPerson[]> {
-        const db = await this.getPentaDb();
+        const db = await this.getBackendDb();
         return await this.resolvePeople(await db.findAllPeopleForAuditorium(await auditorium.getId()));
     }
 
     public async getPeopleForTalk(talk: Talk): Promise<IDbPerson[]> {
-        const db = await this.getPentaDb();
+        const db = await this.getBackendDb();
         return await this.resolvePeople(await db.findAllPeopleForTalk(await talk.getId()));
     }
 
     public async getPeopleForInterest(int: InterestRoom): Promise<IDbPerson[]> {
-        const db = await this.getPentaDb();
+        const db = await this.getBackendDb();
         // Yes, an interest room is an auditorium to Penta.
         return await this.resolvePeople(await db.findAllPeopleForAuditorium(await int.getId()));
     }
 
     public async getInviteTargetsForAuditorium(auditorium: Auditorium, backstage = false): Promise<IDbPerson[]> {
+        // Backstage is just a marker here
+        backstage;
+
         const people = await this.getPeopleForAuditorium(auditorium);
-        const roles = [Role.Coordinator, Role.Host, Role.Speaker];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Coordinator, Role.Host, Role.Speaker]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     public async getInviteTargetsForTalk(talk: Talk): Promise<IDbPerson[]> {
         const people = await this.getPeopleForTalk(talk);
-        const roles = [Role.Speaker, Role.Host, Role.Coordinator];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Speaker, Role.Host, Role.Coordinator]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     public async getInviteTargetsForInterest(int: InterestRoom): Promise<IDbPerson[]> {
         const people = await this.getPeopleForInterest(int);
-        const roles = [Role.Speaker, Role.Host, Role.Coordinator];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Speaker, Role.Host, Role.Coordinator]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     public async getModeratorsForAuditorium(auditorium: Auditorium): Promise<IDbPerson[]> {
         const people = await this.getPeopleForAuditorium(auditorium);
-        const roles = [Role.Coordinator];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Coordinator]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     public async getModeratorsForTalk(talk: Talk): Promise<IDbPerson[]> {
         const people = await this.getPeopleForTalk(talk);
-        const roles = [Role.Coordinator, Role.Speaker, Role.Host];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Coordinator, Role.Speaker, Role.Host]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     public async getModeratorsForInterest(int: InterestRoom): Promise<IDbPerson[]> {
         const people = await this.getPeopleForInterest(int);
-        const roles = [Role.Host, Role.Coordinator];
-        return people.filter(p => roles.includes(p.event_role));
+        const roles = new Set([Role.Host, Role.Coordinator]);
+        return people.filter(p => roles.has(p.event_role));
     }
 
     private async resolvePeople(people: IDbPerson[]): Promise<IDbPerson[]> {
         // Clone people from the DB to avoid accidentally mutating caches
-        people = people.map(p => objectFastClone(p))
+        people = people.map(p => objectFastClone(p));
 
         // Fill in any details we have that the database doesn't
         for (const person of people) {
@@ -642,10 +649,10 @@ export class Conference {
     /**
      * Gets the Pentabarf database record for a talk.
      * @param talkId The talk ID.
-     * @returns The database record for the talk, if it exists; `null` otherwise.
+     * @returns The database record for the talk, if it exists; `undefined` otherwise.
      */
-    public async getDbTalk(talkId: string): Promise<IDbTalk | null> {
-        return this.pentaDb.getTalk(talkId);
+    public async getDbTalk(talkId: string): Promise<IDbTalk | undefined> {
+        return this.backendDb.getTalk(talkId);
     }
 
     public getInterestRoom(intId: string): InterestRoom {
