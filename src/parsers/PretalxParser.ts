@@ -97,6 +97,15 @@ export interface IPretalxSpreakersResult {
 
 export interface IPretalxSpreakersResp extends IPretalxResp<IPretalxSpreakersResult> { }
 
+export interface IPretalxAnswersResult {
+    id: number;
+    answer: string | number;
+    question: { id: number; question: { [language: string]: string; }; };
+    person?: string;
+}
+
+export interface IPretalxAnswersResp extends IPretalxResp<IPretalxAnswersResult> { }
+
 export default class PretalxParser implements ConferenceParser {
     public getSystemName(): AvailableBackends {
         return "pretalx";
