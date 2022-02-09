@@ -31,7 +31,7 @@ export class PretalxDb implements DBBackend {
     public async findAllPeopleForAuditorium(auditoriumId: string): Promise<IDbPerson[]> {
         const pentalxTalks = await this.fetchAPI<IPretalxTalksResp>(`api/events/${config.conference.id}/talks `, undefined, undefined);
         return pentalxTalks.results
-            .filter(talk => talk.slot.room["en"] === auditoriumId && config.conference.prefixes.auditoriumRooms.some(prefix => talk.slot.room.startsWith(prefix)))
+            .filter(talk => talk.slot.room["en"] === auditoriumId && config.conference.prefixes.auditoriumRooms.some(prefix => { return talk.slot.room["en"].startsWith(prefix); }))
             .map(talk => talk.speakers
                 .map(speaker => {
                     return {
