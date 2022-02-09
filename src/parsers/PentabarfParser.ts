@@ -109,7 +109,7 @@ export function deprefix(id: string): { kind: RoomKind, name: string; } {
     return { kind: RoomKind.SpecialInterest, name: override || id };
 }
 
-export class PentabarfParser extends ConferenceParser {
+export class PentabarfParser implements ConferenceParser {
     public readonly parsed: IPentabarfSchedule;
 
     public readonly conference: IConference;
@@ -119,7 +119,6 @@ export class PentabarfParser extends ConferenceParser {
     public readonly interestRooms: IInterestRoom[];
 
     constructor(rawXml: string) {
-        super();
         const parser = new XMLParser({
             attributesGroupName: "attr",
             textNodeName: "#text",
