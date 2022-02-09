@@ -33,7 +33,7 @@ export interface IPretalxTalksResult {
             target: string;
             options: any[];
         };
-        answer: string;
+        answer: string | number;
         answer_file?: string;
         submission: string;
         person?: any;
@@ -161,7 +161,7 @@ export default class PretalxParser implements ConferenceParser {
                 dateTs: DateTime.fromISO(talk.slot.start).toMillis(),
                 startTime: DateTime.fromISO(talk.slot.start).toMillis(),
                 endTime: DateTime.fromISO(talk.slot.end).toMillis(),
-                slug: talk.answers.find(answer => answer.question.question["en"] === "Slug for the submission?")?.answer,
+                slug: talk.answers.find(answer => answer.question.question["en"] === "Slug for the submission?")?.answer as string,
                 title: talk.title,
                 subtitle: talk.abstract,
                 track: talk.slot.room["en"],

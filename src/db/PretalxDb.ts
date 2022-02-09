@@ -89,7 +89,7 @@ export class PretalxDb implements DBBackend {
         const pentalxTalks = await this.fetchAPI<IPretalxTalksResp>(`api/events/${config.conference.id}/talks `, undefined, undefined);
         const now = DateTime.now();
         return pentalxTalks.results.filter(talk => {
-            const presentation_length = 0;
+            const presentation_length = talk.answers.find(answer => answer.question.question["en"] === "Duration of the video?").answer as number;
             const startTime = DateTime.fromISO(talk.slot.start).plus({ minutes: presentation_length });
             return startTime >= now.minus({ minutes: minBefore }) && startTime <= now.plus({ minutes: inNextMinutes });
         }).map(talk => this.postprocessTalk(talk));
@@ -126,8 +126,10 @@ export class PretalxDb implements DBBackend {
 
     private postprocessTalk(pentalxTalk: IPretalxTalksResult): IDbTalk {
         const prerecorded = true;// TODO check if we have files and then use those?
-        const qaStartTime = 0 + config.conference.backend.schedulePreBufferSeconds * 1000; // TODO calculate
         let livestreamStartDatetime: number;
+        const videoLength = pentalxTalk.answers.find(answer => answer.question.question["en"] === "Duration of the video?").answer as number;
+        const qaStartTimeRaw = DateTime.fromISO(pentalxTalk.slot.start).plus({ minutes: videoLength });
+        const qaStartTime = qaStartTimeRaw.plus({ seconds: config.conference.backend.schedulePreBufferSeconds * 1000 }).toMillis();
         if (prerecorded) {
             // For prerecorded talks, a preroll is shown, followed by the talk recording, then an
             // interroll, then live Q&A.
