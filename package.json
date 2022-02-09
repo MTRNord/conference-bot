@@ -30,7 +30,7 @@
     "matrix-bot-sdk": "^0.5.19",
     "matrix-org-irc": "^1.2.0",
     "matrix-widget-api": "^0.1.0-beta.18",
-    "node-fetch": "^3.2.0",
+    "node-fetch": "^2.6.1",
     "pg": "^8.7.1",
     "postcss": "^8.4.6",
     "postcss-preset-env": "^7.3.0",
