@@ -87,6 +87,8 @@ interface IConfig {
         };
         backend: {
             type: AvailableBackends;
+            schedulePreBufferSeconds: number;
+            schedulePostBufferSeconds: number;
             pentabarf?: {
                 definition: string;
                 database: {
@@ -98,8 +100,6 @@ interface IConfig {
                     sslmode: string;
                     tblPeople: string;
                     tblSchedule: string;
-                    schedulePreBufferSeconds: number;
-                    schedulePostBufferSeconds: number;
                 };
             };
             pretalx?: {

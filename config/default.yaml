@@ -140,6 +140,15 @@ conference:
     # The system used for the data
     # Currently only "pentabarf" is supported
     type: "pentabarf"
+
+    # The duration in seconds added to the `presentation_length` to account for preroll material
+    # such as sponsor segments. If this is built into the table already then set this to zero.
+    schedulePreBufferSeconds: 30
+
+    # The duration in seconds added to the talk `duration` to account for postroll material
+    # such as sponsor segments. If this is built into the table already then set this to zero.
+    schedulePostBufferSeconds: 30
+
     # Settings that only affect pentabarf setups
     pentabarf:
       # The URL to the XML which is updated with conference information.
@@ -218,14 +227,6 @@ conference:
         # a parameter. As such, this particular config value is vulnerable to SQL injection. Seeing as
         # how you (the bot's admin) are the one entering it: don't do that to yourself.
         tblSchedule: "view_matrix_bot_export_schedule"
-
-        # The duration in seconds added to the `presentation_length` to account for preroll material
-        # such as sponsor segments. If this is built into the table already then set this to zero.
-        schedulePreBufferSeconds: 30
-
-        # The duration in seconds added to the talk `duration` to account for postroll material
-        # such as sponsor segments. If this is built into the table already then set this to zero.
-        schedulePostBufferSeconds: 30
     # Config options for the pretalx.org backend which is accessed using their API
     pretalx:
       # Address of the instance

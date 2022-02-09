@@ -5,28 +5,25 @@ import fetch from "node-fetch";
 import { DateTime } from "luxon";
 import { RoomKind } from "../models/room_kinds";
 
-interface IPretalxSpeaker {
-    name: string;
-    code: string;
-    bioagraphy: string;
-}
+export type State = "submitted" | "accepted" | "rejected" | "confirmed";
+export type Slot = {
+    start: string;
+    end: string;
+    room: { [language: string]: string; };
+};
 
-interface IPretalxTalksResult {
+export interface IPretalxTalksResult {
     code: string;
-    speakers: IPretalxSpeaker[],
+    speakers: IPretalxSpreakersResult[];
     title: string;
-    state: "submitted" | "accepted" | "rejected" | "confirmed";
+    state: State;
     abstract: string;
     description: string;
     duration: number;
     do_not_record: boolean;
     is_featured: boolean;
     content_locale: string;
-    slot: {
-        start: string;
-        end: string;
-        room: string;
-    };
+    slot: Slot;
     answers: {
         id: number;
         question: {
@@ -47,16 +44,16 @@ interface IPretalxTalksResult {
     tags: string[];
 }
 
-interface IPretalxResp<T> {
+export interface IPretalxResp<T> {
     count: number;
     next?: string;
     previous?: string;
     results: T[];
 }
 
-interface IPretalxTalksResp extends IPretalxResp<IPretalxTalksResult> { }
+export interface IPretalxTalksResp extends IPretalxResp<IPretalxTalksResult> { }
 
-interface IPretalxEvent {
+export interface IPretalxEvent {
     name: { [language: string]: string; };
     slug: string;
     timezone: string;
@@ -71,7 +68,7 @@ interface IPretalxEvent {
     };
 }
 
-interface IPretalxRoomsResult {
+export interface IPretalxRoomsResult {
     id: number;
     name: { [language: string]: string; };
     description: { [language: string]: string; };
@@ -81,14 +78,15 @@ interface IPretalxRoomsResult {
     availabilities: { start: string; end: string; }[];
 }
 
-interface IPretalxRoomsResp extends IPretalxResp<IPretalxRoomsResult> { }
+export interface IPretalxRoomsResp extends IPretalxResp<IPretalxRoomsResult> { }
 
-interface IPretalxSpreakersResult {
+export interface IPretalxSpreakersResult {
     code: string;
     name: string;
     biography: string;
     submissions: string[];
     avatar: string;
+    email: string;
     availabilities: {
         id: number;
         start: string;
@@ -97,7 +95,7 @@ interface IPretalxSpreakersResult {
     };
 }
 
-interface IPretalxSpreakersResp extends IPretalxResp<IPretalxSpreakersResult> { }
+export interface IPretalxSpreakersResp extends IPretalxResp<IPretalxSpreakersResult> { }
 
 export default class PretalxParser implements ConferenceParser {
     public getSystemName(): AvailableBackends {
@@ -135,19 +133,20 @@ export default class PretalxParser implements ConferenceParser {
         const interestRooms: IInterestRoom[] = [];
 
         for (const room of pretalxRooms.results) {
+            // We dont use the id as it is basically useless for us
             if (config.conference.prefixes.auditoriumRooms.some(prefix => room.name["en"].startsWith(prefix))) {
-                if (!auditoriums.some(r => r.id === room.id.toString())) {
+                if (!auditoriums.some(r => r.id === room.name["en"])) {
                     auditoriums.push({
-                        id: room.id.toString(),
+                        id: room.name["en"],
                         name: room.name["en"],
                         kind: RoomKind.Auditorium,
                         talksByDate: {},
                     });
                 }
             } else if (config.conference.prefixes.interestRooms.some(prefix => room.name["en"].startsWith(prefix))) {
-                if (!interestRooms.some(r => r.id === room.id.toString())) {
+                if (!interestRooms.some(r => r.id === room.name["en"])) {
                     interestRooms.push({
-                        id: room.id.toString(),
+                        id: room.name["en"],
                         name: room.name["en"],
                         kind: RoomKind.SpecialInterest
                     });
@@ -164,7 +163,7 @@ export default class PretalxParser implements ConferenceParser {
                 slug: talk.answers.find(answer => answer.question["en"] === "Slug for the submission?").answer,
                 title: talk.title,
                 subtitle: talk.abstract,
-                track: talk.slot.room,
+                track: talk.slot.room["en"],
                 speakers: talk.speakers.map(speaker => {
                     return {
                         id: speaker.code,
@@ -172,7 +171,7 @@ export default class PretalxParser implements ConferenceParser {
                     } as IPerson;
                 }),
             };
-            const auditoriumroom = auditoriums.find(room => room.name === talk.slot.room);
+            const auditoriumroom = auditoriums.find(room => room.name === talk.slot.room["en"]);
             if (auditoriumroom) {
                 if (auditoriumroom.talksByDate[DateTime.fromISO(talk.slot.start).toMillis()]) {
                     auditoriumroom.talksByDate[DateTime.fromISO(talk.slot.start).toMillis()].push(italk);

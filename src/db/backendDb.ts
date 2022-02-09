@@ -3,6 +3,7 @@ import config, { AvailableBackends } from "../config";
 import { IDbPerson } from "./DbPerson";
 import { IDbTalk } from "./DbTalk";
 import { PentaDb } from "./PentaDb";
+import { PretalxDb } from "./PretalxDb";
 
 export abstract class DBBackend {
     public abstract getSystemName(): AvailableBackends;
@@ -26,6 +27,8 @@ export const getBackendDB = (): DBBackend => {
         case "pentabarf": {
             return new PentaDb();
         }
+        case "pretalx":
+            return new PretalxDb();
         default: {
             throw new Error("Unsupported backend type set in the config");
         }
