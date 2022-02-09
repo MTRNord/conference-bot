@@ -4,6 +4,7 @@ import { IPretalxTalksResp, IPretalxTalksResult } from "../parsers/PretalxParser
 import { DBBackend } from "./backendDb";
 import { IDbPerson } from "./DbPerson";
 import { IDbTalk } from "./DbTalk";
+import fetch from "node-fetch";
 
 export class PretalxDb implements DBBackend {
     public getSystemName(): AvailableBackends {
@@ -21,7 +22,7 @@ export class PretalxDb implements DBBackend {
                     person_id: speaker.code,
                     event_role: undefined, // TODO figure this out
                     email: speaker.email,
-                    matrix_id: talk.answers.find(answer => answer.question["en"] === "What is your Matrix ID?").answer,
+                    matrix_id: talk.answers.find(answer => answer.question.question["en"] === "What is your Matrix ID?").answer,
                     conference_room: talk.slot.room["en"],
                     remark: "", // pretalx has no remarks it seems
                 } as IDbPerson;
@@ -32,7 +33,7 @@ export class PretalxDb implements DBBackend {
         const pentalxTalks = await this.fetchAPI<IPretalxTalksResp>(`api/events/${config.conference.id}/talks `, undefined, undefined);
         return pentalxTalks.results
             .filter(talk => talk.slot.room["en"] === auditoriumId && config.conference.prefixes.auditoriumRooms.some(prefix => { return talk.slot.room["en"].startsWith(prefix); }))
-            .map(talk => talk.speakers
+            .flatMap(talk => talk.speakers
                 .map(speaker => {
                     return {
                         name: speaker.name,
@@ -40,19 +41,19 @@ export class PretalxDb implements DBBackend {
                         person_id: speaker.code,
                         event_role: undefined, // TODO figure this out
                         email: speaker.email,
-                        matrix_id: talk.answers.find(answer => answer.question["en"] === "What is your Matrix ID?").answer,
+                        matrix_id: talk.answers.find(answer => answer.question.question["en"] === "What is your Matrix ID?").answer,
                         conference_room: talk.slot.room["en"],
                         remark: "", // pretalx has no remarks it seems
                     } as IDbPerson;
                 })
-            ).flat();
+            );
     }
 
     public async findAllPeopleForTalk(talkId: string): Promise<IDbPerson[]> {
         const pentalxTalks = await this.fetchAPI<IPretalxTalksResp>(`api/events/${config.conference.id}/talks `, undefined, undefined);
         return pentalxTalks.results
             .filter(talk => talk.code === talkId)
-            .map(talk => talk.speakers
+            .flatMap(talk => talk.speakers
                 .map(speaker => {
                     return {
                         name: speaker.name,
@@ -60,12 +61,12 @@ export class PretalxDb implements DBBackend {
                         person_id: speaker.code,
                         event_role: undefined, // TODO figure this out
                         email: speaker.email,
-                        matrix_id: talk.answers.find(answer => answer.question["en"] === "What is your Matrix ID?").answer,
+                        matrix_id: talk.answers.find(answer => answer.question.question["en"] === "What is your Matrix ID?").answer,
                         conference_room: talk.slot.room["en"],
                         remark: "", // pretalx has no remarks it seems
                     } as IDbPerson;
                 })
-            ).flat();
+            );
     }
 
     // Not supported
@@ -74,15 +75,34 @@ export class PretalxDb implements DBBackend {
     }
 
     public async getUpcomingTalkStarts(inNextMinutes: number, minBefore: number): Promise<IDbTalk[]> {
-        throw new Error("Method not implemented.");
+        // where starttime is >= now - minBefore AND starttime <= now + inNextMinutes
+        const pentalxTalks = await this.fetchAPI<IPretalxTalksResp>(`api/events/${config.conference.id}/talks `, undefined, undefined);
+        const now = DateTime.now();
+        return pentalxTalks.results.filter(talk => {
+            const startTime = DateTime.fromISO(talk.slot.start);
+            return startTime >= now.minus({ minutes: minBefore }) && startTime <= now.plus({ minutes: inNextMinutes });
+        }).map(talk => this.postprocessTalk(talk));
     }
 
     public async getUpcomingQAStarts(inNextMinutes: number, minBefore: number): Promise<IDbTalk[]> {
-        throw new Error("Method not implemented.");
+        // where (starttime + presentation_length) is >= now - minBefore AND (starttime + presentation_length) <= now + inNextMinutes
+        const pentalxTalks = await this.fetchAPI<IPretalxTalksResp>(`api/events/${config.conference.id}/talks `, undefined, undefined);
+        const now = DateTime.now();
+        return pentalxTalks.results.filter(talk => {
+            const presentation_length = 0;
+            const startTime = DateTime.fromISO(talk.slot.start).plus({ minutes: presentation_length });
+            return startTime >= now.minus({ minutes: minBefore }) && startTime <= now.plus({ minutes: inNextMinutes });
+        }).map(talk => this.postprocessTalk(talk));
     }
 
     public async getUpcomingTalkEnds(inNextMinutes: number, minBefore: number): Promise<IDbTalk[]> {
-        throw new Error("Method not implemented.");
+        // where (starttime + duration) is >= now - minBefore AND (starttime + duration) <= now + inNextMinutes
+        const pentalxTalks = await this.fetchAPI<IPretalxTalksResp>(`api/events/${config.conference.id}/talks `, undefined, undefined);
+        const now = DateTime.now();
+        return pentalxTalks.results.filter(talk => {
+            const startTime = DateTime.fromISO(talk.slot.start).plus({ minutes: talk.duration });
+            return startTime >= now.minus({ minutes: minBefore }) && startTime <= now.plus({ minutes: inNextMinutes });
+        }).map(talk => this.postprocessTalk(talk));
     }
 
     public async getTalk(talkId: string): Promise<IDbTalk> {

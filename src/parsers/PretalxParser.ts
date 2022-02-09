@@ -1,6 +1,6 @@
 import config, { AvailableBackends } from "../config";
 import { IConference, IAuditorium, ITalk, IPerson, IInterestRoom } from "../models/schedule";
-import { ConferenceParser } from "./ConferenceParser";
+import { ConferenceParser, deprefix } from "./ConferenceParser";
 import fetch from "node-fetch";
 import { DateTime } from "luxon";
 import { RoomKind } from "../models/room_kinds";
@@ -133,22 +133,23 @@ export default class PretalxParser implements ConferenceParser {
         const interestRooms: IInterestRoom[] = [];
 
         for (const room of pretalxRooms.results) {
+            const metadata = deprefix(room.name["en"] || "org.matrix.confbot.unknown");
             // We dont use the id as it is basically useless for us
-            if (config.conference.prefixes.auditoriumRooms.some(prefix => room.name["en"].startsWith(prefix))) {
+            if (metadata.kind === RoomKind.Auditorium) {
                 if (!auditoriums.some(r => r.id === room.name["en"])) {
                     auditoriums.push({
                         id: room.name["en"],
                         name: room.name["en"],
-                        kind: RoomKind.Auditorium,
+                        kind: metadata.kind,
                         talksByDate: {},
                     });
                 }
-            } else if (config.conference.prefixes.interestRooms.some(prefix => room.name["en"].startsWith(prefix))) {
+            } else if (metadata.kind === RoomKind.SpecialInterest) {
                 if (!interestRooms.some(r => r.id === room.name["en"])) {
                     interestRooms.push({
                         id: room.name["en"],
                         name: room.name["en"],
-                        kind: RoomKind.SpecialInterest
+                        kind: metadata.kind
                     });
                 }
             }
@@ -160,7 +161,7 @@ export default class PretalxParser implements ConferenceParser {
                 dateTs: DateTime.fromISO(talk.slot.start).toMillis(),
                 startTime: DateTime.fromISO(talk.slot.start).toMillis(),
                 endTime: DateTime.fromISO(talk.slot.end).toMillis(),
-                slug: talk.answers.find(answer => answer.question["en"] === "Slug for the submission?").answer,
+                slug: talk.answers.find(answer => answer.question.question["en"] === "Slug for the submission?")?.answer,
                 title: talk.title,
                 subtitle: talk.abstract,
                 track: talk.slot.room["en"],

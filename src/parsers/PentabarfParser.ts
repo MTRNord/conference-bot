@@ -16,8 +16,8 @@ limitations under the License.
 
 import { IAuditorium, IConference, IInterestRoom, IPerson, ITalk } from "../models/schedule";
 import { RoomKind } from "../models/room_kinds";
-import config, { AvailableBackends } from "../config";
-import { ConferenceParser } from './ConferenceParser';
+import { AvailableBackends } from "../config";
+import { ConferenceParser, deprefix } from './ConferenceParser';
 import { XMLParser } from "fast-xml-parser";
 import { DateTime } from "luxon";
 
@@ -91,22 +91,6 @@ function arrayLike<T>(val: T | T[]): T[] {
 function simpleTimeParse(str: string): { hours: number, minutes: number; } {
     const parts = str.split(':');
     return { hours: Number(parts[0]), minutes: Number(parts[1]) };
-}
-
-export function deprefix(id: string): { kind: RoomKind, name: string; } {
-    const override = config.conference.prefixes.nameOverrides[id];
-
-    const auditoriumPrefix = config.conference.prefixes.auditoriumRooms.find(p => id.startsWith(p));
-    if (auditoriumPrefix) {
-        return { kind: RoomKind.Auditorium, name: override || id.slice(auditoriumPrefix.length) };
-    }
-
-    const interestPrefix = config.conference.prefixes.interestRooms.find(p => id.startsWith(p));
-    if (interestPrefix) {
-        return { kind: RoomKind.SpecialInterest, name: override || id.slice(interestPrefix.length) };
-    }
-
-    return { kind: RoomKind.SpecialInterest, name: override || id };
 }
 
 export class PentabarfParser implements ConferenceParser {
